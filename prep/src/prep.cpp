@@ -1,20 +1,21 @@
-#include <cstdio>
+#include <ctime>
 
 #include <prep.hpp>
 
-#define OUTS 16384
-char         outbuf[OUTS];
-char*        outp = outbuf;
-Source*      cursource;
-int          nerrs;
-struct token nltoken = { NL, 0, 0, 0, 1, (uchar*) "\n" };
-char*        curtime;
-int          incdepth;
-int          ifdepth;
-int          ifsatisfied[MAX_NESTED_IF_DEPTH];
-int          skipping;
+static constexpr size_t OUT_BUFF_SIZE { 16384 };
 
-int main(int argc, char** argv) {
+char    outbuf[OUT_BUFF_SIZE];
+char*   outp { outbuf };
+Source* cursource {};
+int     nerrs {};
+Token   nltoken { TokenType::NL, 0, 0, 0, 1, "\n" };
+char*   curtime {};
+int     incdepth {};
+int     ifdepth {};
+int     ifsatisfied[MAX_NESTED_IF_DEPTH] {};
+int     skipping {};
+
+int main(_In_opt_ int argc, _In_opt_count_(argc) char* argv[]) {
     Tokenrow tr;
     long     t;
     char     ebuf[BUFSIZ];
@@ -32,11 +33,12 @@ int main(int argc, char** argv) {
     flushout();
     fflush(stderr);
     exits(nerrs ? "errors" : 0);
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
-void process(Tokenrow* trp) {
-    int anymacros = 0;
+void process(Tokenrow* trp) noexcept {
+    int anymacros {};
 
     for (;;) {
         if (trp->tp >= trp->lp) {
@@ -70,9 +72,9 @@ void process(Tokenrow* trp) {
     }
 }
 
-void control(Tokenrow* trp) {
-    Nlist* np;
-    Token* tp;
+void control(Tokenrow* trp) noexcept {
+    Nlist* np {};
+    Token* tp {};
 
     tp = trp->tp;
     if (tp->type != NAME) {

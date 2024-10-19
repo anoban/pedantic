@@ -1,5 +1,3 @@
-#include <cstdio>
-
 #include <prep.hpp>
 
 static char  wbuf[2 * OUTPUT_BUFFER_SIZE];

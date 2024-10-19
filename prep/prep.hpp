@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -115,7 +116,7 @@ static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure toke
 enum { NOT_IN_MACRO, IN_MACRO };
 
 struct Token {
-        unsigned char  type;
+        TokenType      type;
         unsigned char  flag;
         unsigned short hideset;
         unsigned int   wslen;

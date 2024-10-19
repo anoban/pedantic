@@ -1,5 +1,3 @@
-#include <cstdio>
-
 #include <prep.hpp>
 
 extern int   getopt(int, char**, char*);
@@ -12,9 +10,8 @@ int          nolineinfo;
 Nlist*       kwdefined;
 char         wd[128];
 
-#define NLSIZE 128
-
-Nlist* nlist[NLSIZE];
+static constexpr size_t NLIST_SIZE { 128 };
+Nlist*                  nlist[NLIST_SIZE];
 
 struct kwtab {
         char* kw;
@@ -45,7 +42,7 @@ struct kwtab {
 unsigned long namebit[077 + 1];
 Nlist*        np;
 
-void setup(int argc, char** argv) {
+void setup(int argc, char** argv) noexcept {
     struct kwtab* kp;
     Nlist*        np;
     Token         t;
@@ -169,14 +166,14 @@ void setup(int argc, char** argv) {
     }
 }
 
-Nlist* lookup(Token* tp, int install) {
+Nlist* lookup(Token* tp, int install) noexcept {
     unsigned int h;
     Nlist*       np;
     uchar *      cp, *cpe;
 
     h = 0;
     for (cp = tp->t, cpe = cp + tp->len; cp < cpe;) h += *cp++;
-    h  %= NLSIZE;
+    h  %= NLIST_SIZE;
     np  = nlist[h];
     while (np) {
         if (*tp->t == *np->name && tp->len == np->len && strncmp((char*) tp->t, (char*) np->name, tp->len) == 0) return np;
