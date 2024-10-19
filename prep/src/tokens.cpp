@@ -70,22 +70,22 @@ static char wstab[] = {
     0, /* UMINUS */
 };
 
-void maketokenrow(int size, Tokenrow* trp) {
+void maketokenrow(int size, token_row* trp) {
     trp->max = size;
     if (size > 0)
-        trp->bp = (Token*) domalloc(size * sizeof(Token));
+        trp->bp = (token*) _checked_malloc(size * sizeof(token));
     else
         trp->bp = NULL;
     trp->tp = trp->bp;
     trp->lp = trp->bp;
 }
 
-Token* growtokenrow(Tokenrow* trp) {
+token* growtokenrow(token_row* trp) {
     int ncur  = trp->tp - trp->bp;
     int nlast = trp->lp - trp->bp;
 
     trp->max  = 3 * trp->max / 2 + 1;
-    trp->bp   = (Token*) realloc(trp->bp, trp->max * sizeof(Token));
+    trp->bp   = (token*) realloc(trp->bp, trp->max * sizeof(token));
     trp->lp   = &trp->bp[nlast];
     trp->tp   = &trp->bp[ncur];
     return trp->lp;
@@ -94,8 +94,8 @@ Token* growtokenrow(Tokenrow* trp) {
 /*
  * Compare a row of tokens, ignoring the content of WS; return !=0 if different
  */
-int comparetokens(Tokenrow* tr1, Tokenrow* tr2) {
-    Token *tp1, *tp2;
+int comparetokens(token_row* tr1, token_row* tr2) {
+    token *tp1, *tp2;
 
     tp1 = tr1->tp;
     tp2 = tr2->tp;
@@ -112,7 +112,7 @@ int comparetokens(Tokenrow* tr1, Tokenrow* tr2) {
  * tp ends up pointing just beyond the replacement.
  * Canonical whitespace is assured on each side.
  */
-void insertrow(Tokenrow* dtr, int ntok, Tokenrow* str) {
+void insertrow(token_row* dtr, int ntok, token_row* str) {
     int nrtok  = rowlen(str);
 
     dtr->tp   += ntok;
@@ -127,9 +127,9 @@ void insertrow(Tokenrow* dtr, int ntok, Tokenrow* str) {
 /*
  * make sure there is WS before trp->tp, if tokens might merge in the output
  */
-void makespace(Tokenrow* trp) {
+void makespace(token_row* trp) {
     uchar* tt;
-    Token* tp = trp->tp;
+    token* tp = trp->tp;
 
     if (tp >= trp->lp) return;
     if (tp->wslen) {
@@ -153,10 +153,10 @@ void makespace(Tokenrow* trp) {
  * It is assumed that there is enough space.
  *  Not strictly conforming.
  */
-void movetokenrow(Tokenrow* dtr, Tokenrow* str) {
+void movetokenrow(token_row* dtr, token_row* str) {
     int nby;
 
-    /* nby = sizeof(Token) * (str->lp - str->bp); */
+    /* nby = sizeof(token) * (str->lp - str->bp); */
     nby = (char*) str->lp - (char*) str->bp;
     memmove(dtr->tp, str->bp, nby);
 }
@@ -167,13 +167,13 @@ void movetokenrow(Tokenrow* dtr, Tokenrow* str) {
  * The row may need to be grown.
  * Non-strictly conforming because of the (char *), but easily fixed
  */
-void adjustrow(Tokenrow* trp, int nt) {
+void adjustrow(token_row* trp, int nt) {
     int nby, size;
 
     if (nt == 0) return;
     size = (trp->lp - trp->bp) + nt;
     while (size > trp->max) growtokenrow(trp);
-    /* nby = sizeof(Token) * (trp->lp - trp->tp); */
+    /* nby = sizeof(token) * (trp->lp - trp->tp); */
     nby = (char*) trp->lp - (char*) trp->tp;
     if (nby) memmove(trp->tp + nt, trp->tp, nby);
     trp->lp += nt;
@@ -183,7 +183,7 @@ void adjustrow(Tokenrow* trp, int nt) {
  * Copy a row of tokens into the destination holder, allocating
  * the space for the contents.  Return the destination.
  */
-Tokenrow* copytokenrow(Tokenrow* dtr, Tokenrow* str) {
+token_row* copytokenrow(token_row* dtr, token_row* str) {
     int len = rowlen(str);
 
     maketokenrow(len, dtr);
@@ -197,9 +197,9 @@ Tokenrow* copytokenrow(Tokenrow* dtr, Tokenrow* str) {
  * The value strings are copied as well.  The first token
  * has WS available.
  */
-Tokenrow* normtokenrow(Tokenrow* trp) {
-    Token*    tp;
-    Tokenrow* ntrp = new (Tokenrow);
+token_row* normtokenrow(token_row* trp) {
+    token*    tp;
+    token_row* ntrp = new (token_row);
     int       len;
 
     len = trp->lp - trp->tp;
@@ -221,8 +221,8 @@ Tokenrow* normtokenrow(Tokenrow* trp) {
 /*
  * Debugging
  */
-void peektokens(Tokenrow* trp, char* str) {
-    Token* tp;
+void peektokens(token_row* trp, char* str) {
+    token* tp;
     int    c;
 
     tp = trp->tp;
@@ -247,8 +247,8 @@ void peektokens(Tokenrow* trp, char* str) {
     fflush(stderr);
 }
 
-void puttokens(Tokenrow* trp) {
-    Token* tp;
+void puttokens(token_row* trp) {
+    token* tp;
     int    len;
     uchar* p;
 
@@ -291,7 +291,7 @@ void flushout(void) {
 /*
  * turn a row into just a newline
  */
-void setempty(Tokenrow* trp) {
+void setempty(token_row* trp) {
     trp->tp  = trp->bp;
     trp->lp  = trp->bp + 1;
     *trp->bp = nltoken;
@@ -311,7 +311,7 @@ char* outnum(char* p, int n) {
  * Null terminated.
  */
 uchar* newstring(uchar* s, int l, int o) {
-    uchar* ns = (uchar*) domalloc(l + o + 1);
+    uchar* ns = (uchar*) _checked_malloc(l + o + 1);
 
     ns[l + o] = '\0';
     return (uchar*) strncpy((char*) ns + o, (char*) s, l) - o;

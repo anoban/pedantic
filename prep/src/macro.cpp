@@ -5,10 +5,10 @@
 /*
  * do a macro definition.  tp points to the name being defined in the line
  */
-void dodefine(Tokenrow* trp) {
-    Token*    tp;
+void dodefine(token_row* trp) {
+    token*    tp;
     Nlist*    np;
-    Tokenrow *def, *args;
+    token_row *def, *args;
     int       dots;
 
     dots = 0;
@@ -29,12 +29,12 @@ void dodefine(Tokenrow* trp) {
         /* macro with args */
         int narg  = 0;
         tp       += 1;
-        args      = new (Tokenrow);
+        args      = new (token_row);
         maketokenrow(2, args);
         if (tp->type != RP) {
             int err = 0;
             for (;;) {
-                Token* atp;
+                token* atp;
                 if (tp->type == ELLIPS)
                     dots++;
                 else if (tp->type != NAME) {
@@ -71,9 +71,9 @@ void dodefine(Tokenrow* trp) {
             error(ERROR, "Macro redefinition of %t", trp->bp + 2);
     }
     if (args) {
-        Tokenrow* tap;
+        token_row* tap;
         tap = normtokenrow(args);
-        dofree(args->bp);
+        free(args->bp);
         args = tap;
     }
     np->ap    = args;
@@ -85,13 +85,13 @@ void dodefine(Tokenrow* trp) {
 /*
  * Definition received via -D or -U
  */
-void doadefine(Tokenrow* trp, int type) {
+void doadefine(token_row* trp, int type) {
     Nlist*               np;
     static unsigned char one[]       = "1";
-    static Token         onetoken[1] = {
+    static token         onetoken[1] = {
         { NUMBER, 0, 0, 0, 1, one }
     };
-    static Tokenrow onetr = { onetoken, onetoken, onetoken + 1, 1 };
+    static token_row onetr = { onetoken, onetoken, onetoken + 1, 1 };
 
     trp->tp               = trp->bp;
     if (type == 'U') {
@@ -121,8 +121,8 @@ syntax:
  * Do macro expansion in a row of tokens.
  * Flag is NULL if more input can be gathered.
  */
-void expandrow(Tokenrow* trp, char* flag, int inmacro) {
-    Token* tp;
+void expandrow(token_row* trp, char* flag, int inmacro) {
+    token* tp;
     Nlist* np;
 
     if (flag) setsource(flag, -1, "");
@@ -158,11 +158,11 @@ void expandrow(Tokenrow* trp, char* flag, int inmacro) {
  * Return trp->tp at the first token next to be expanded
  * (ordinarily the beginning of the expansion)
  */
-void expand(Tokenrow* trp, Nlist* np, int inmacro) {
-    Tokenrow  ntr;
+void expand(token_row* trp, Nlist* np, int inmacro) {
+    token_row  ntr;
     int       ntokc, narg, i;
-    Token*    tp;
-    Tokenrow* atr[MAX_MACRO_ARGS + 1];
+    token*    tp;
+    token_row* atr[MAX_MACRO_ARGS + 1];
     int       hs;
 
     copytokenrow(&ntr, np->vp); /* copy macro value */
@@ -183,8 +183,8 @@ void expand(Tokenrow* trp, Nlist* np, int inmacro) {
         }
         substargs(np, &ntr, atr); /* put args into replacement */
         for (i = 0; i < narg; i++) {
-            dofree(atr[i]->bp);
-            dofree(atr[i]);
+            free(atr[i]->bp);
+            free(atr[i]);
         }
     }
     if (!inmacro) doconcat(&ntr); /* execute ## operators */
@@ -200,7 +200,7 @@ void expand(Tokenrow* trp, Nlist* np, int inmacro) {
     ntr.tp = ntr.bp;
     insertrow(trp, ntokc, &ntr);
     trp->tp -= rowlen(&ntr);
-    dofree(ntr.bp);
+    free(ntr.bp);
     return;
 }
 
@@ -209,11 +209,11 @@ void expand(Tokenrow* trp, Nlist* np, int inmacro) {
  * Return total number of tokens passed, stash number of args found.
  * trp->tp is not changed relative to the tokenrow.
  */
-int gatherargs(Tokenrow* trp, Tokenrow** atr, int dots, int* narg) {
+int gatherargs(token_row* trp, token_row** atr, int dots, int* narg) {
     int      parens = 1;
     int      ntok   = 0;
-    Token *  bp, *lp;
-    Tokenrow ttr;
+    token *  bp, *lp;
+    token_row ttr;
     int      ntokp;
     int      needspace;
 
@@ -293,9 +293,9 @@ int gatherargs(Tokenrow* trp, Tokenrow** atr, int dots, int* narg) {
  * substitute the argument list into the replacement string
  *  This would be simple except for ## and #
  */
-void substargs(Nlist* np, Tokenrow* rtr, Tokenrow** atr) {
-    Tokenrow tatr;
-    Token*   tp;
+void substargs(Nlist* np, token_row* rtr, token_row** atr) {
+    token_row tatr;
+    token*   tp;
     int      ntok, argno;
 
     for (rtr->tp = rtr->bp; rtr->tp < rtr->lp;) {
@@ -319,7 +319,7 @@ void substargs(Nlist* np, Tokenrow* rtr, Tokenrow** atr) {
                 copytokenrow(&tatr, atr[argno]);
                 expandrow(&tatr, "<macro>", IN_MACRO);
                 insertrow(rtr, 1, &tatr);
-                dofree(tatr.bp);
+                free(tatr.bp);
             }
             continue;
         }
@@ -330,9 +330,9 @@ void substargs(Nlist* np, Tokenrow* rtr, Tokenrow** atr) {
 /*
  * Evaluate the ## operators in a tokenrow
  */
-void doconcat(Tokenrow* trp) {
-    Token *  ltp, *ntp;
-    Tokenrow ntr;
+void doconcat(token_row* trp) {
+    token *  ltp, *ntp;
+    token_row ntr;
     int      len;
 
     for (trp->tp = trp->bp; trp->tp < trp->lp; trp->tp++) {
@@ -359,7 +359,7 @@ void doconcat(Tokenrow* trp) {
             trp->tp = ltp;
             makespace(&ntr);
             insertrow(trp, (ntp - ltp) + 1, &ntr);
-            dofree(ntr.bp);
+            free(ntr.bp);
             trp->tp--;
         }
     }
@@ -370,8 +370,8 @@ void doconcat(Tokenrow* trp) {
  * look it up in mac's arglist, and if found, return the
  * corresponding index in the argname array.  Return -1 if not found.
  */
-int lookuparg(Nlist* mac, Token* tp) {
-    Token* ap;
+int lookuparg(Nlist* mac, token* tp) {
+    token* ap;
 
     if (tp->type != NAME || mac->ap == NULL) return -1;
     if ((mac->flag & ISVARMAC) && strcmp((char*) tp->t, "__VA_ARGS__") == 0) return rowlen(mac->ap) - 1;
@@ -384,10 +384,10 @@ int lookuparg(Nlist* mac, Token* tp) {
  * Return a quoted version of the tokenrow (from # arg)
  */
 #define STRLEN 512
-Tokenrow* stringify(Tokenrow* vp) {
-    static Token    t  = { STRING };
-    static Tokenrow tr = { &t, &t, &t + 1, 1 };
-    Token*          tp;
+token_row* stringify(token_row* vp) {
+    static token    t  = { STRING };
+    static token_row tr = { &t, &t, &t + 1, 1 };
+    token*          tp;
     uchar           s[STRLEN];
     uchar *         sp = s, *cp;
     int             i, instring;
@@ -416,10 +416,10 @@ Tokenrow* stringify(Tokenrow* vp) {
 /*
  * expand a builtin name
  */
-void builtin(Tokenrow* trp, int biname) {
+void builtin(token_row* trp, int biname) {
     char*   op;
-    Token*  tp;
-    Source* s;
+    token*  tp;
+    source* s;
 
     tp = trp->tp;
     trp->tp++;

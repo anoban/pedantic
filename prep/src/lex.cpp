@@ -567,12 +567,12 @@ void fixlex(void) {
  * The value is a flag indicating that possible macros have
  * been seen in the row.
  */
-int gettokens(Tokenrow* trp, int reset) {
+int gettokens(token_row* trp, int reset) {
     register int    c, state, oldstate;
     register uchar* ip;
-    register Token *tp, *maxp;
+    register token *tp, *maxp;
     int             runelen;
-    Source*         s    = cursource;
+    source*         s    = cursource;
     int             nmac = 0;
     extern char     outbuf[];
 
@@ -730,7 +730,7 @@ reswitch:
 }
 
 /* have seen ?; handle the trigraph it starts (if any) else 0 */
-int trigraph(Source* s) {
+int trigraph(source* s) {
     int c;
 
     while (s->inp + 2 >= s->inl && fillbuf(s) != EOF);
@@ -755,7 +755,7 @@ int trigraph(Source* s) {
     return c;
 }
 
-int foldline(Source* s) {
+int foldline(source* s) {
     int ncr = 0;
 
 recheck:
@@ -772,7 +772,7 @@ recheck:
     return 0;
 }
 
-int fillbuf(Source* s) {
+int fillbuf(source* s) {
     int n;
 
     while ((char*) s->inl + s->ins / 8 > (char*) s->inb + s->ins) {
@@ -782,7 +782,7 @@ int fillbuf(Source* s) {
         if (p < 0) error(FATAL, "negative input pointer!?");
         /* double the buffer size and try again */
         s->ins *= 2;
-        s->inb  = dorealloc(s->inb, s->ins);
+        s->inb  = _checked_realloc(s->inb, s->ins);
         s->inl  = s->inb + l;
         s->inp  = s->inb + p;
     }
@@ -803,8 +803,8 @@ int fillbuf(Source* s) {
  * If fd>0 and str==NULL, then from a file `name';
  * if fd==-1 and str, then from the string.
  */
-Source* setsource(char* name, int fd, char* str) {
-    Source* s = new (Source);
+source* setsource(char* name, int fd, char* str) {
+    source* s = new (source);
     int     len;
 
     s->line     = 1;
@@ -817,7 +817,7 @@ Source* setsource(char* name, int fd, char* str) {
     /* slop at right for EOB */
     if (str) {
         len    = strlen(str);
-        s->inb = domalloc(len + 4);
+        s->inb = _checked_malloc(len + 4);
         s->inp = s->inb;
         strncpy((char*) s->inp, str, len);
     } else {
@@ -831,7 +831,7 @@ Source* setsource(char* name, int fd, char* str) {
         }
         junk = length;
         if (junk < INPUT_BUFFER_SIZE) junk = INPUT_BUFFER_SIZE;
-        s->inb = domalloc((junk) + 4);
+        s->inb = _checked_malloc((junk) + 4);
         s->inp = s->inb;
         len    = 0;
     }
@@ -843,12 +843,12 @@ Source* setsource(char* name, int fd, char* str) {
 }
 
 void unsetsource(void) {
-    Source* s = cursource;
+    source* s = cursource;
 
     if (s->fd >= 0) {
         close(s->fd);
-        dofree(s->inb);
+        free(s->inb);
     }
     cursource = s->next;
-    dofree(s);
+    free(s);
 }

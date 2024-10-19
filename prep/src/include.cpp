@@ -1,12 +1,12 @@
 #include <prep.hpp>
 
-Includelist includelist[MAX_INCLUDE_DIRS];
+include_list includelist[MAX_INCLUDE_DIRS];
 
 char* objname;
 
-void doinclude(Tokenrow* trp) {
+void doinclude(token_row* trp) {
     char         fname[256], iname[256], *p;
-    Includelist* ip;
+    include_list* ip;
     int          angled, len, fd, i;
 
     trp->tp += 1;
@@ -82,8 +82,8 @@ syntax:
  * Generate a line directive for cursource
  */
 void genline(void) {
-    static Token    ta = { UNCLASS, NULL, 0, 0 };
-    static Tokenrow tr = { &ta, &ta, &ta + 1, 1 };
+    static token    ta = { UNCLASS, NULL, 0, 0 };
+    static token_row tr = { &ta, &ta, &ta + 1, 1 };
     uchar*          p;
 
     if (nolineinfo) return;
@@ -111,7 +111,7 @@ void genline(void) {
 
 void setobjname(char* f) {
     int n   = strlen(f);
-    objname = (char*) domalloc(n + 5);
+    objname = (char*) _checked_malloc(n + 5);
     strcpy(objname, f);
     if (objname[n - 2] == '.')
         strcpy(objname + n - 1, "$O: ");

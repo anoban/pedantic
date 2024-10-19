@@ -45,7 +45,7 @@ int newhideset(int hs, Nlist* np) {
         maxhidesets = 3 * maxhidesets / 2 + 1;
         hidesets    = (Hideset*) realloc(hidesets, (sizeof(Hideset*)) * maxhidesets);
     }
-    hs1 = (Hideset) domalloc(len * sizeof(Hideset));
+    hs1 = (Hideset) _checked_malloc(len * sizeof(Hideset));
     memmove(hs1, nhs, len * sizeof(Hideset));
     hidesets[nhidesets] = hs1;
     return nhidesets++;
@@ -71,8 +71,8 @@ int unionhideset(int hs1, int hs2) {
 }
 
 void iniths(void) {
-    hidesets     = (Hideset*) domalloc(maxhidesets * sizeof(Hideset*));
-    hidesets[0]  = (Hideset) domalloc(sizeof(Hideset));
+    hidesets     = (Hideset*) _checked_malloc(maxhidesets * sizeof(Hideset*));
+    hidesets[0]  = (Hideset) _checked_malloc(sizeof(Hideset));
     *hidesets[0] = NULL;
     nhidesets++;
 }

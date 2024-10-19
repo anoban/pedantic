@@ -45,18 +45,18 @@ Nlist*        np;
 void setup(int argc, char** argv) noexcept {
     struct kwtab* kp;
     Nlist*        np;
-    Token         t;
+    token         t;
     int           fd, i;
     char *        fp, *dp;
-    Tokenrow      tr;
+    token_row      tr;
     char*         objtype;
     char*         includeenv;
     int           firstinclude;
     static char   nbuf[40];
-    static Token  deftoken[1] = {
+    static token  deftoken[1] = {
         { NAME, 0, 0, 0, 7, (uchar*) "defined" }
     };
-    static Tokenrow deftr        = { deftoken, deftoken, deftoken + 1, 1 };
+    static token_row deftr        = { deftoken, deftoken, deftoken + 1, 1 };
     int             debuginclude = 0;
     int             nodot        = 0;
     char            xx[2]        = { 0, 0 };
@@ -166,7 +166,7 @@ void setup(int argc, char** argv) noexcept {
     }
 }
 
-Nlist* lookup(Token* tp, int install) noexcept {
+Nlist* lookup(token* tp, int install) noexcept {
     unsigned int h;
     Nlist*       np;
     uchar *      cp, *cpe;

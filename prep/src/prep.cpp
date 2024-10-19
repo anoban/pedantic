@@ -1,24 +1,25 @@
+#include <cstdarg>
 #include <ctime>
 
 #include <prep.hpp>
 
-static constexpr size_t OUT_BUFF_SIZE { 16384 };
+static constexpr size_t OUT_BUFF_SIZE { 16'384 };
 
 char    outbuf[OUT_BUFF_SIZE];
 char*   outp { outbuf };
-Source* cursource {};
+source* cursource {};
 int     nerrs {};
-Token   nltoken { TokenType::NL, 0, 0, 0, 1, "\n" };
+token   nltoken { token_type::NL, 0, 0, 0, 1, "\n" };
 char*   curtime {};
 int     incdepth {};
 int     ifdepth {};
 int     ifsatisfied[MAX_NESTED_IF_DEPTH] {};
 int     skipping {};
 
-int main(_In_opt_ int argc, _In_opt_count_(argc) char* argv[]) {
-    Tokenrow tr;
-    long     t;
-    char     ebuf[BUFSIZ];
+int wmain(_In_opt_ int argc, _In_opt_count_(argc) wchar_t* argv[]) {
+    token_row tr;
+    long      t;
+    char      ebuf[BUFSIZ];
 
     setbuf(stderr, ebuf);
     t       = time(NULL);
@@ -37,44 +38,44 @@ int main(_In_opt_ int argc, _In_opt_count_(argc) char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void process(Tokenrow* trp) noexcept {
+void process(_In_ token_row* const tknrw) noexcept {
     int anymacros {};
 
     for (;;) {
-        if (trp->tp >= trp->lp) {
-            trp->tp = trp->lp  = trp->bp;
-            outp               = outbuf;
-            anymacros         |= gettokens(trp, 1);
-            trp->tp            = trp->bp;
+        if (tknrw->tp >= tknrw->lp) {
+            tknrw->tp = tknrw->lp  = tknrw->bp;
+            outp                   = outbuf;
+            anymacros             |= gettokens(tknrw, 1);
+            tknrw->tp              = tknrw->bp;
         }
-        if (trp->tp->type == END) {
+        if (tknrw->tp->type == END) {
             if (--incdepth >= 0) {
                 if (cursource->ifdepth) error(ERROR, "Unterminated conditional in #include");
                 unsetsource();
                 cursource->line += cursource->lineinc;
-                trp->tp          = trp->lp;
+                tknrw->tp        = tknrw->lp;
                 genline();
                 continue;
             }
             if (ifdepth) error(ERROR, "Unterminated #if/#ifdef/#ifndef");
             break;
         }
-        if (trp->tp->type == SHARP) {
-            trp->tp += 1;
-            control(trp);
+        if (tknrw->tp->type == SHARP) {
+            tknrw->tp += 1;
+            control(tknrw);
         } else if (!skipping && anymacros)
-            expandrow(trp, NULL, NOT_IN_MACRO);
-        if (skipping) setempty(trp);
-        puttokens(trp);
+            expandrow(tknrw, NULL, NOT_IN_MACRO);
+        if (skipping) setempty(tknrw);
+        puttokens(tknrw);
         anymacros        = 0;
         cursource->line += cursource->lineinc;
         if (cursource->lineinc > 1) genline();
     }
 }
 
-void control(Tokenrow* trp) noexcept {
+void control(token_row* trp) noexcept {
     Nlist* np {};
-    Token* tp {};
+    token* tp {};
 
     tp = trp->tp;
     if (tp->type != NAME) {
@@ -219,73 +220,4 @@ kline:
     }
     setempty(trp);
     return;
-}
-
-void* dorealloc(void* ptr, int size) {
-    void* p = realloc(ptr, size);
-
-    if (p == NULL) error(FATAL, "Out of memory from realloc");
-    return p;
-}
-
-void* domalloc(int size) {
-    void* p = malloc(size);
-
-    if (p == NULL) error(FATAL, "Out of memory from malloc");
-    return p;
-}
-
-void dofree(void* p) { free(p); }
-
-void error(enum ErrorKind type, char* string, ...) {
-    va_list   ap;
-    char *    cp, *ep;
-    Token*    tp;
-    Tokenrow* trp;
-    Source*   s;
-    int       i;
-    void*     p;
-
-    fprintf(stderr, "cpp: ");
-    for (s = cursource; s; s = s->next)
-        if (*s->filename) fprintf(stderr, "%s:%d ", s->filename, s->line);
-    va_start(ap, string);
-    for (ep = string; *ep; ep++) {
-        if (*ep == '%') {
-            switch (*++ep) {
-                case 's' :
-                    cp = va_arg(ap, char*);
-                    fprintf(stderr, "%s", cp);
-                    break;
-                case 'd' :
-                    i = va_arg(ap, int);
-                    fprintf(stderr, "%d", i);
-                    break;
-                case 'p' :
-                    p = va_arg(ap, void*);
-                    fprintf(stderr, "%p", p);
-                    break;
-                case 't' :
-                    tp = va_arg(ap, Token*);
-                    fprintf(stderr, "%.*s", tp->len, tp->t);
-                    break;
-
-                case 'r' :
-                    trp = va_arg(ap, Tokenrow*);
-                    for (tp = trp->tp; tp < trp->lp && tp->type != NL; tp++) {
-                        if (tp > trp->tp && tp->wslen) fputc(' ', stderr);
-                        fprintf(stderr, "%.*s", tp->len, tp->t);
-                    }
-                    break;
-
-                default : fputc(*ep, stderr); break;
-            }
-        } else
-            fputc(*ep, stderr);
-    }
-    va_end(ap);
-    fputc('\n', stderr);
-    if (type == FATAL) exits("error");
-    if (type != WARNING) nerrs = 1;
-    fflush(stderr);
 }

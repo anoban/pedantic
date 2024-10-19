@@ -3,21 +3,21 @@
 #include <cstdlib>
 #include <cstring>
 
-static constexpr size_t INPUT_BUFFER_SIZE { 32768 }; // input buffer
-static constexpr size_t OUTPUT_BUFFER_SIZE { 4096 }; // output buffer
-static constexpr size_t MAX_MACRO_ARGS { 128 };      // max number arguments to a macro
-static constexpr size_t MAX_INCLUDE_DIRS { 64 };     // max number of include directories (-I)
-static constexpr size_t MAX_NESTED_IF_DEPTH { 32 };  // depth of nesting of #if
+static constexpr size_t INPUT_BUFFER_SIZE { 32768 };
+static constexpr size_t OUTPUT_BUFFER_SIZE { 4096 };
+static constexpr size_t MAX_MACRO_ARGS { 128 };     // max number arguments to a function like macro
+static constexpr size_t MAX_INCLUDE_DIRS { 64 };    // max number of include directories (-I)
+static constexpr size_t MAX_NESTED_IF_DEPTH { 32 }; // maximum allowed depth for nesting #if preprocessor directives
 
-#ifndef EOF
+#ifndef EOF // <cstdio>
     #define EOF (-1)
 #endif
 
-#ifndef NULL
+#ifndef NULL // <vcruntime.h>
     #define NULL 0
 #endif
 
-enum class TokenType : unsigned char {
+enum class token_type : unsigned char {
     END,
     UNCLASS,
     NAME,
@@ -80,7 +80,7 @@ enum class TokenType : unsigned char {
     UMINUS
 };
 
-enum class KeywordType : unsigned char {
+enum class keyword_type : unsigned char {
     KIF,      // #if
     KIFDEF,   // #ifdef
     KIFNDEF,  // #ifndef
@@ -90,16 +90,16 @@ enum class KeywordType : unsigned char {
     KINCLUDE, // #include
     KDEFINE,  // #define
     KUNDEF,   // #undef
-    KLINE,    // __LINE__
+    KLINE,
     KERROR,
     KWARNING,
     KPRAGMA,  // #pragma
     KDEFINED, // #defined
-    KLINENO,
-    KFILE, // __FILE__
-    KDATE, // __DATE__
-    KTIME, // __TIME__
-    KSTDC, // __STDC__
+    KLINENO,  // __LINE__
+    KFILE,    // __FILE__
+    KDATE,    // __DATE__
+    KTIME,    // __TIME__
+    KSTDC,    // __STDC__
     KEVAL
 };
 
@@ -115,8 +115,8 @@ static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure toke
 
 enum { NOT_IN_MACRO, IN_MACRO };
 
-struct Token {
-        TokenType      type;
+struct token {
+        token_type     type;
         unsigned char  flag;
         unsigned short hideset;
         unsigned int   wslen;
@@ -124,96 +124,93 @@ struct Token {
         unsigned char* t;
 };
 
-struct Tokenrow {
-        Token* tp;  // current one to scan
-        Token* bp;  // base (allocated value)
-        Token* lp;  // last + 1 token used
+struct token_row {
+        token* tp;  // current one to scan
+        token* bp;  // base (allocated value)
+        token* lp;  // last + 1 token used
         int    max; // number allocated
 };
 
-struct Source {
-        char*          filename; // name of file of the source */
-        int            line;     // current line number */
-        int            lineinc;  // adjustment for \\n lines */
-        unsigned char* inb;      // input buffer */
-        unsigned char* inp;      // input pointer */
-        unsigned char* inl;      // end of input */
-        int            ins;      // input buffer size */
-        int            fd;       // input source */
-        int            ifdepth;  // conditional nesting in include */
-        struct source* next;     // stack for #include */
+struct source {
+        char*          filename; // name of file of the source
+        int            line;     // current line number
+        int            lineinc;  // adjustment for \\n lines
+        unsigned char* inb;      // input buffer
+        unsigned char* inp;      // input pointer
+        unsigned char* inl;      // end of input
+        int            ins;      // input buffer size
+        int            fd;       // input source
+        int            ifdepth;  // conditional nesting in include
+        source*        next;     // stack for #include
 };
 
 struct Nlist {
         struct nlist*  next;
         unsigned char* name;
         int            len;
-        Tokenrow*      vp;   // value as macro */
-        Tokenrow*      ap;   // list of argument names, if any */
-        char           val;  // value as preprocessor name */
-        char           flag; // is defined, is pp name */
+        token_row*     vp;   // value as macro
+        token_row*     ap;   // list of argument names, if any
+        char           val;  // value as preprocessor name
+        char           flag; // is defined, is pp name
 };
 
-struct Includelist {
+struct include_list {
         char  deleted;
         char  always;
         char* file;
 };
 
-#define new(t)          (t*) domalloc(sizeof(t))
+#define new(t)          (t*) _checked_malloc(sizeof(t))
 #define quicklook(a, b) (namebit[(a) & 077] & (1 << ((b) & 037)))
 #define quickset(a, b)  namebit[(a) & 077] |= (1 << ((b) & 037))
 
 extern unsigned long namebit[077 + 1];
 
-enum class ErrorKind : unsigned char { WARNING, ERROR, FATAL };
+enum class error_kind : unsigned char { WARNING, ERROR, FATAL };
 
 void expandlex(void);
 void fixlex(void);
 void setup(int, char**);
 
 #define gettokens cpp_gettokens
-int gettokens(Tokenrow*, int);
+int gettokens(token_row*, int);
 
-int            comparetokens(Tokenrow*, Tokenrow*);
-Source*        setsource(char*, int, char*);
-void           unsetsource(void);
-void           puttokens(Tokenrow*);
-void           process(Tokenrow*);
-void*          dorealloc(void*, int);
-void*          domalloc(int);
-void           dofree(void*);
-void           error(enum ErrorKind, char*, ...);
+int     comparetokens(token_row*, token_row*);
+source* setsource(char*, int, char*);
+void    unsetsource(void);
+void    puttokens(token_row*);
+void    process(token_row*);
+
 void           flushout(void);
-int            fillbuf(Source*);
-int            trigraph(Source*);
-int            foldline(Source*);
-Nlist*         lookup(Token*, int);
-void           control(Tokenrow*);
-void           dodefine(Tokenrow*);
-void           doadefine(Tokenrow*, int);
-void           doinclude(Tokenrow*);
-void           doif(Tokenrow*, enum KeywordType);
-void           expand(Tokenrow*, Nlist*, int);
-void           builtin(Tokenrow*, int);
-int            gatherargs(Tokenrow*, Tokenrow**, int, int*);
-void           substargs(Nlist*, Tokenrow*, Tokenrow**);
-void           expandrow(Tokenrow*, char*, int);
-void           maketokenrow(int, Tokenrow*);
-Tokenrow*      copytokenrow(Tokenrow*, Tokenrow*);
-Token*         growtokenrow(Tokenrow*);
-Tokenrow*      normtokenrow(Tokenrow*);
-void           adjustrow(Tokenrow*, int);
-void           movetokenrow(Tokenrow*, Tokenrow*);
-void           insertrow(Tokenrow*, int, Tokenrow*);
-void           peektokens(Tokenrow*, char*);
-void           doconcat(Tokenrow*);
-Tokenrow*      stringify(Tokenrow*);
-int            lookuparg(Nlist*, Token*);
-long           eval(Tokenrow*, int);
+int            fillbuf(source*);
+int            trigraph(source*);
+int            foldline(source*);
+Nlist*         lookup(token*, int);
+void           control(token_row*);
+void           dodefine(token_row*);
+void           doadefine(token_row*, int);
+void           doinclude(token_row*);
+void           doif(token_row*, enum keyword_type);
+void           expand(token_row*, Nlist*, int);
+void           builtin(token_row*, int);
+int            gatherargs(token_row*, token_row**, int, int*);
+void           substargs(Nlist*, token_row*, token_row**);
+void           expandrow(token_row*, char*, int);
+void           maketokenrow(int, token_row*);
+token_row*     copytokenrow(token_row*, token_row*);
+token*         growtokenrow(token_row*);
+token_row*     normtokenrow(token_row*);
+void           adjustrow(token_row*, int);
+void           movetokenrow(token_row*, token_row*);
+void           insertrow(token_row*, int, token_row*);
+void           peektokens(token_row*, char*);
+void           doconcat(token_row*);
+token_row*     stringify(token_row*);
+int            lookuparg(Nlist*, token*);
+long           eval(token_row*, int);
 void           genline(void);
-void           setempty(Tokenrow*);
-void           makespace(Tokenrow*);
+void           setempty(token_row*);
+void           makespace(token_row*);
 char*          outnum(char*, int);
 int            digit(int);
 unsigned char* newstring(unsigned char*, int, int);
@@ -227,18 +224,90 @@ void           clearwstab(void);
 
 #define rowlen(tokrow) ((tokrow)->lp - (tokrow)->bp)
 
-extern char*       outp;
-extern Token       nltoken;
-extern Source*     cursource;
-extern char*       curtime;
-extern int         incdepth;
-extern int         ifdepth;
-extern int         ifsatisfied[MAX_NESTED_IF_DEPTH];
-extern int         Mflag;
-extern int         nolineinfo;
-extern int         skipping;
-extern int         verbose;
-extern int         Cplusplus;
-extern Nlist*      kwdefined;
-extern Includelist includelist[MAX_INCLUDE_DIRS];
-extern char        wd[];
+extern char*        outp;
+extern token        nltoken;
+extern source*      cursource;
+extern char*        curtime;
+extern int          incdepth;
+extern int          ifdepth;
+extern int          ifsatisfied[MAX_NESTED_IF_DEPTH];
+extern int          Mflag;
+extern int          nolineinfo;
+extern int          skipping;
+extern int          verbose;
+extern int          Cplusplus;
+extern Nlist*       kwdefined;
+extern include_list includelist[MAX_INCLUDE_DIRS];
+extern char         wd[];
+
+static inline void* __cdecl _checked_realloc(_In_ void* const ptr, _In_ const size_t size) noexcept {
+    void* _ptr = ::realloc(ptr, size);
+    if (!_ptr) {
+        ::fputws(L"memory reallocation failed inside " __FUNCTIONW__ "\n", stderr);
+        std::exit(EXIT_FAILURE);
+    }
+    return _ptr;
+}
+
+static inline void* __cdecl _checked_malloc(_In_ const size_t size) noexcept {
+    void* ptr = ::malloc(size);
+    if (!ptr) {
+        ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
+        std::exit(EXIT_FAILURE);
+    }
+    return ptr;
+}
+
+static inline void error(_In_ const error_kind& type, const char* string, ...) noexcept {
+    va_list    ap;
+    char *     cp, *ep;
+    token*     tp;
+    token_row* trp;
+    source*    s;
+    int        i;
+    void*      p;
+
+    fprintf(stderr, "prep: ");
+    for (s = cursource; s; s = s->next)
+        if (*s->filename) fprintf(stderr, "%s:%d ", s->filename, s->line);
+
+    va_start(ap, string);
+    for (ep = string; *ep; ep++) {
+        if (*ep == '%') {
+            switch (*++ep) {
+                case 's' :
+                    cp = va_arg(ap, char*);
+                    fprintf(stderr, "%s", cp);
+                    break;
+                case 'd' :
+                    i = va_arg(ap, int);
+                    fprintf(stderr, "%d", i);
+                    break;
+                case 'p' :
+                    p = va_arg(ap, void*);
+                    fprintf(stderr, "%p", p);
+                    break;
+                case 't' :
+                    tp = va_arg(ap, token*);
+                    fprintf(stderr, "%.*s", tp->len, tp->t);
+                    break;
+
+                case 'r' :
+                    trp = va_arg(ap, token_row*);
+                    for (tp = trp->tp; tp < trp->lp && tp->type != NL; tp++) {
+                        if (tp > trp->tp && tp->wslen) fputc(' ', stderr);
+                        fprintf(stderr, "%.*s", tp->len, tp->t);
+                    }
+                    break;
+
+                default : fputc(*ep, stderr); break;
+            }
+        } else
+            fputc(*ep, stderr);
+    }
+    va_end(ap);
+    fputc('\n', stderr);
+    if (type == FATAL) exits("error");
+    if (type != WARNING) nerrs = 1;
+    fflush(stderr);
+}
