@@ -2,8 +2,7 @@
 
 #include <prep.hpp>
 
-
-static char  wbuf[2 * OBS];
+static char  wbuf[2 * OUTPUT_BUFFER_SIZE];
 static char* wbp    = wbuf;
 
 /*
@@ -265,7 +264,7 @@ void puttokens(Tokenrow* trp) {
             len += tp->wslen + tp->len;
         }
         if (Mflag == 0) {
-            if (len > OBS / 2) { /* handle giant token */
+            if (len > OUTPUT_BUFFER_SIZE / 2) { /* handle giant token */
                 if (wbp > wbuf) write(1, wbuf, wbp - wbuf);
                 write(1, p, len);
                 wbp = wbuf;
@@ -274,10 +273,10 @@ void puttokens(Tokenrow* trp) {
                 wbp += len;
             }
         }
-        if (wbp >= &wbuf[OBS]) {
-            write(1, wbuf, OBS);
-            if (wbp > &wbuf[OBS]) memcpy(wbuf, wbuf + OBS, wbp - &wbuf[OBS]);
-            wbp -= OBS;
+        if (wbp >= &wbuf[OUTPUT_BUFFER_SIZE]) {
+            write(1, wbuf, OUTPUT_BUFFER_SIZE);
+            if (wbp > &wbuf[OUTPUT_BUFFER_SIZE]) memcpy(wbuf, wbuf + OUTPUT_BUFFER_SIZE, wbp - &wbuf[OUTPUT_BUFFER_SIZE]);
+            wbp -= OUTPUT_BUFFER_SIZE;
         }
     }
     trp->tp = tp;

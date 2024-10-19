@@ -2,11 +2,11 @@
 #include <cstdlib>
 #include <cstring>
 
-#define INS      32768 // input buffer
-#define OBS      4096  // output buffer
-#define NARG     128   // Max number arguments to a macro
-#define NINCLUDE 64    // Max number of include directories (-I)
-#define NIF      32    // depth of nesting of #if
+static constexpr size_t INPUT_BUFFER_SIZE { 32768 }; // input buffer
+static constexpr size_t OUTPUT_BUFFER_SIZE { 4096 }; // output buffer
+static constexpr size_t MAX_MACRO_ARGS { 128 };      // max number arguments to a macro
+static constexpr size_t MAX_INCLUDE_DIRS { 64 };     // max number of include directories (-I)
+static constexpr size_t MAX_NESTED_IF_DEPTH { 32 };  // depth of nesting of #if
 
 #ifndef EOF
     #define EOF (-1)
@@ -80,39 +80,39 @@ enum class TokenType : unsigned char {
 };
 
 enum class KeywordType : unsigned char {
-    KIF,
-    KIFDEF,
-    KIFNDEF,
-    KELIF,
-    KELSE,
-    KENDIF,
-    KINCLUDE,
-    KDEFINE,
-    KUNDEF,
-    KLINE,
+    KIF,      // #if
+    KIFDEF,   // #ifdef
+    KIFNDEF,  // #ifndef
+    KELIF,    // #elif
+    KELSE,    // #else
+    KENDIF,   // #endif
+    KINCLUDE, // #include
+    KDEFINE,  // #define
+    KUNDEF,   // #undef
+    KLINE,    // __LINE__
     KERROR,
     KWARNING,
-    KPRAGMA,
-    KDEFINED,
+    KPRAGMA,  // #pragma
+    KDEFINED, // #defined
     KLINENO,
-    KFILE,
-    KDATE,
-    KTIME,
-    KSTDC,
+    KFILE, // __FILE__
+    KDATE, // __DATE__
+    KTIME, // __TIME__
+    KSTDC, // __STDC__
     KEVAL
 };
 
-#define ISDEFINED  01  // has #defined value
-#define ISKW       02  // is PP keyword
-#define ISUNCHANGE 04  // can't be #defined in PP
-#define ISMAC      010 // builtin macro, e.g. __LINE__
-#define ISVARMAC   020 // variadic macro
+static constexpr size_t ISDEFINED { 01 };  // has #defined value
+static constexpr size_t ISKW { 02 };       // is a preprocessor keyword
+static constexpr size_t ISUNCHANGE { 04 }; // can't be #defined in preprocessor
+static constexpr size_t ISMAC { 010 };     // builtin macro, e.g. __LINE__
+static constexpr size_t ISVARMAC { 020 };  // variadic macro
 
-#define EOB        0xFE /* sentinel for end of input buffer */
-#define EOFC       0xFD /* sentinel for end of input file */
-#define XPWS       1    /* token flag: white space to assure token sep. */
+static constexpr size_t EOB { 0xFE };  // sentinel for end of input buffer
+static constexpr size_t EOFC { 0xFD }; // sentinel for end of input file
+static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure token sep.
 
-enum { Notinmacro, Inmacro };
+enum { NOT_IN_MACRO, IN_MACRO };
 
 struct Token {
         unsigned char  type;
@@ -126,7 +126,7 @@ struct Token {
 struct Tokenrow {
         Token* tp;  // current one to scan
         Token* bp;  // base (allocated value)
-        Token* lp;  // last+1 token used
+        Token* lp;  // last + 1 token used
         int    max; // number allocated
 };
 
@@ -147,10 +147,10 @@ struct Nlist {
         struct nlist*  next;
         unsigned char* name;
         int            len;
-        Tokenrow*      vp;   /* value as macro */
-        Tokenrow*      ap;   /* list of argument names, if any */
-        char           val;  /* value as preprocessor name */
-        char           flag; /* is defined, is pp name */
+        Tokenrow*      vp;   // value as macro */
+        Tokenrow*      ap;   // list of argument names, if any */
+        char           val;  // value as preprocessor name */
+        char           flag; // is defined, is pp name */
 };
 
 struct Includelist {
@@ -162,15 +162,18 @@ struct Includelist {
 #define new(t)          (t*) domalloc(sizeof(t))
 #define quicklook(a, b) (namebit[(a) & 077] & (1 << ((b) & 037)))
 #define quickset(a, b)  namebit[(a) & 077] |= (1 << ((b) & 037))
+
 extern unsigned long namebit[077 + 1];
 
-enum class errtype : unsigned char { WARNING, ERROR, FATAL };
+enum class ErrorKind : unsigned char { WARNING, ERROR, FATAL };
 
 void expandlex(void);
 void fixlex(void);
 void setup(int, char**);
+
 #define gettokens cpp_gettokens
-int            gettokens(Tokenrow*, int);
+int gettokens(Tokenrow*, int);
+
 int            comparetokens(Tokenrow*, Tokenrow*);
 Source*        setsource(char*, int, char*);
 void           unsetsource(void);
@@ -179,7 +182,7 @@ void           process(Tokenrow*);
 void*          dorealloc(void*, int);
 void*          domalloc(int);
 void           dofree(void*);
-void           error(enum errtype, char*, ...);
+void           error(enum ErrorKind, char*, ...);
 void           flushout(void);
 int            fillbuf(Source*);
 int            trigraph(Source*);
@@ -229,12 +232,12 @@ extern Source*     cursource;
 extern char*       curtime;
 extern int         incdepth;
 extern int         ifdepth;
-extern int         ifsatisfied[NIF];
+extern int         ifsatisfied[MAX_NESTED_IF_DEPTH];
 extern int         Mflag;
 extern int         nolineinfo;
 extern int         skipping;
 extern int         verbose;
 extern int         Cplusplus;
 extern Nlist*      kwdefined;
-extern Includelist includelist[NINCLUDE];
+extern Includelist includelist[MAX_INCLUDE_DIRS];
 extern char        wd[];

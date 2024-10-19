@@ -830,13 +830,13 @@ Source* setsource(char* name, int fd, char* str) {
             free(d);
         }
         junk = length;
-        if (junk < INS) junk = INS;
+        if (junk < INPUT_BUFFER_SIZE) junk = INPUT_BUFFER_SIZE;
         s->inb = domalloc((junk) + 4);
         s->inp = s->inb;
         len    = 0;
     }
 
-    s->ins    = INS;
+    s->ins    = INPUT_BUFFER_SIZE;
     s->inl    = s->inp + len;
     s->inl[0] = s->inl[1] = EOB;
     return s;

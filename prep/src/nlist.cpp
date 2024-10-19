@@ -92,7 +92,7 @@ void setup(int argc, char** argv) {
     if (getwd(wd, sizeof(wd)) == 0) wd[0] = '\0';
     includelist[0].file   = "/sys/include";
     includelist[0].always = 1;
-    firstinclude          = NINCLUDE - 2;
+    firstinclude          = MAX_INCLUDE_DIRS - 2;
     if ((includeenv = getenv("include")) != NULL) {
         char* cp;
         includeenv = strdup(includeenv);
@@ -107,7 +107,7 @@ void setup(int argc, char** argv) {
     setsource("", -1, 0);
     ARGBEGIN {
         case 'N' :
-            for (i = 0; i < NINCLUDE; i++)
+            for (i = 0; i < MAX_INCLUDE_DIRS; i++)
                 if (includelist[i].always == 1) includelist[i].deleted = 1;
             break;
         case 'I' :
@@ -159,12 +159,12 @@ void setup(int argc, char** argv) {
         dup(fdo, 1);
     }
     if (Mflag) setobjname(fp);
-    includelist[NINCLUDE - 1].always = 0;
-    includelist[NINCLUDE - 1].file   = dp;
-    if (nodot) includelist[NINCLUDE - 1].deleted = 1;
+    includelist[MAX_INCLUDE_DIRS - 1].always = 0;
+    includelist[MAX_INCLUDE_DIRS - 1].file   = dp;
+    if (nodot) includelist[MAX_INCLUDE_DIRS - 1].deleted = 1;
     setsource(fp, fd, NULL);
     if (debuginclude) {
-        for (i = 0; i < NINCLUDE; i++)
+        for (i = 0; i < MAX_INCLUDE_DIRS; i++)
             if (includelist[i].file && includelist[i].deleted == 0) error(WARNING, "Include: %s", includelist[i].file);
     }
 }

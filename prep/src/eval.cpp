@@ -12,7 +12,7 @@ struct value {
         int  type;
 };
 
-/* conversion types */
+// conversion types
 #define RELAT 1
 #define ARITH 2
 #define LOGIC 3
@@ -20,72 +20,74 @@ struct value {
 #define SHIFT 5
 #define UNARY 6
 
-/* operator priority, arity, and conversion type, indexed by tokentype */
-const struct pri {
+struct pri {
         char pri;
         char arity;
         char ctype;
-} priority[] = {
-    {  0, 0,     0 }, /* END */
-    {  0, 0,     0 }, /* UNCLASS */
-    {  0, 0,     0 }, /* NAME */
-    {  0, 0,     0 }, /* NUMBER */
-    {  0, 0,     0 }, /* STRING */
-    {  0, 0,     0 }, /* CCON */
-    {  0, 0,     0 }, /* NL */
-    {  0, 0,     0 }, /* WS */
-    {  0, 0,     0 }, /* DSHARP */
-    { 11, 2, RELAT }, /* EQ */
-    { 11, 2, RELAT }, /* NEQ */
-    { 12, 2, RELAT }, /* LEQ */
-    { 12, 2, RELAT }, /* GEQ */
-    { 13, 2, SHIFT }, /* LSH */
-    { 13, 2, SHIFT }, /* RSH */
-    {  7, 2, LOGIC }, /* LAND */
-    {  6, 2, LOGIC }, /* LOR */
-    {  0, 0,     0 }, /* PPLUS */
-    {  0, 0,     0 }, /* MMINUS */
-    {  0, 0,     0 }, /* ARROW */
-    {  0, 0,     0 }, /* SBRA */
-    {  0, 0,     0 }, /* SKET */
-    {  3, 0,     0 }, /* LP */
-    {  3, 0,     0 }, /* RP */
-    {  0, 0,     0 }, /* DOT */
-    { 10, 2, ARITH }, /* AND */
-    { 15, 2, ARITH }, /* STAR */
-    { 14, 2, ARITH }, /* PLUS */
-    { 14, 2, ARITH }, /* MINUS */
-    { 16, 1, UNARY }, /* TILDE */
-    { 16, 1, UNARY }, /* NOT */
-    { 15, 2, ARITH }, /* SLASH */
-    { 15, 2, ARITH }, /* PCT */
-    { 12, 2, RELAT }, /* LT */
-    { 12, 2, RELAT }, /* GT */
-    {  9, 2, ARITH }, /* CIRC */
-    {  8, 2, ARITH }, /* OR */
-    {  5, 2,  SPCL }, /* QUEST */
-    {  5, 2,  SPCL }, /* COLON */
-    {  0, 0,     0 }, /* ASGN */
-    {  4, 2,     0 }, /* COMMA */
-    {  0, 0,     0 }, /* SHARP */
-    {  0, 0,     0 }, /* SEMIC */
-    {  0, 0,     0 }, /* CBRA */
-    {  0, 0,     0 }, /* CKET */
-    {  0, 0,     0 }, /* ASPLUS */
-    {  0, 0,     0 }, /* ASMINUS */
-    {  0, 0,     0 }, /* ASSTAR */
-    {  0, 0,     0 }, /* ASSLASH */
-    {  0, 0,     0 }, /* ASPCT */
-    {  0, 0,     0 }, /* ASCIRC */
-    {  0, 0,     0 }, /* ASLSH */
-    {  0, 0,     0 }, /* ASRSH */
-    {  0, 0,     0 }, /* ASOR */
-    {  0, 0,     0 }, /* ASAND */
-    {  0, 0,     0 }, /* ELLIPS */
-    {  0, 0,     0 }, /* DSHARP1 */
-    {  0, 0,     0 }, /* NAME1 */
-    { 16, 1, UNARY }, /* DEFINED */
-    { 16, 0, UNARY }, /* UMINUS */
+};
+
+// operator priority, arity, and conversion type, indexed by tokentype
+constexpr pri op_priority[] = {
+    {  0, 0,     0 }, // END
+    {  0, 0,     0 }, // UNCLASS
+    {  0, 0,     0 }, // NAME
+    {  0, 0,     0 }, // NUMBER
+    {  0, 0,     0 }, // STRING
+    {  0, 0,     0 }, // CCON
+    {  0, 0,     0 }, // NL
+    {  0, 0,     0 }, // WS
+    {  0, 0,     0 }, // DSHARP
+    { 11, 2, RELAT }, // EQ
+    { 11, 2, RELAT }, // NEQ
+    { 12, 2, RELAT }, // LEQ
+    { 12, 2, RELAT }, // GEQ
+    { 13, 2, SHIFT }, // LSH
+    { 13, 2, SHIFT }, // RSH
+    {  7, 2, LOGIC }, // LAND
+    {  6, 2, LOGIC }, // LOR
+    {  0, 0,     0 }, // PPLUS
+    {  0, 0,     0 }, // MMINUS
+    {  0, 0,     0 }, // ARROW
+    {  0, 0,     0 }, // SBRA
+    {  0, 0,     0 }, // SKET
+    {  3, 0,     0 }, // LP
+    {  3, 0,     0 }, // RP
+    {  0, 0,     0 }, // DOT
+    { 10, 2, ARITH }, // AND
+    { 15, 2, ARITH }, // STAR
+    { 14, 2, ARITH }, // PLUS
+    { 14, 2, ARITH }, // MINUS
+    { 16, 1, UNARY }, // TILDE
+    { 16, 1, UNARY }, // NOT
+    { 15, 2, ARITH }, // SLASH
+    { 15, 2, ARITH }, // PCT
+    { 12, 2, RELAT }, // LT
+    { 12, 2, RELAT }, // GT
+    {  9, 2, ARITH }, // CIRC
+    {  8, 2, ARITH }, // OR
+    {  5, 2,  SPCL }, // QUEST
+    {  5, 2,  SPCL }, // COLON
+    {  0, 0,     0 }, // ASGN
+    {  4, 2,     0 }, // COMMA
+    {  0, 0,     0 }, // SHARP
+    {  0, 0,     0 }, // SEMIC
+    {  0, 0,     0 }, // CBRA
+    {  0, 0,     0 }, // CKET
+    {  0, 0,     0 }, // ASPLUS
+    {  0, 0,     0 }, // ASMINUS
+    {  0, 0,     0 }, // ASSTAR
+    {  0, 0,     0 }, // ASSLASH
+    {  0, 0,     0 }, // ASPCT
+    {  0, 0,     0 }, // ASCIRC
+    {  0, 0,     0 }, // ASLSH
+    {  0, 0,     0 }, // ASRSH
+    {  0, 0,     0 }, // ASOR
+    {  0, 0,     0 }, // ASAND
+    {  0, 0,     0 }, // ELLIPS
+    {  0, 0,     0 }, // DSHARP1
+    {  0, 0,     0 }, // NAME1
+    { 16, 1, UNARY }, // DEFINED
+    { 16, 0, UNARY }, // UMINUS
 };
 
 int            evalop(struct pri);
@@ -96,10 +98,10 @@ enum TokenType ops[NSTAK + 1], *op;
 /*
  * Evaluate an #if #elif #ifdef #ifndef line.  trp->tp points to the keyword.
  */
-long eval(Tokenrow* trp, int kw) {
-    Token* tp;
-    Nlist* np;
-    int    ntok, rand;
+long eval(Tokenrow* trp, int kw) noexcept {
+    Token* tp {};
+    Nlist* np {};
+    int    ntok {}, rand {};
 
     trp->tp++;
     if (kw == KIFDEF || kw == KIFNDEF) {
@@ -112,7 +114,7 @@ long eval(Tokenrow* trp, int kw) {
     }
     ntok           = trp->tp - trp->bp;
     kwdefined->val = KDEFINED; /* activate special meaning of defined */
-    expandrow(trp, "<if>", Notinmacro);
+    expandrow(trp, "<if>", NOT_IN_MACRO);
     kwdefined->val = NAME;
     vp             = vals;
     op             = ops;
@@ -176,7 +178,7 @@ long eval(Tokenrow* trp, int kw) {
             case COLON :
             case COMMA :
                 if (rand == 0) goto syntax;
-                if (evalop(priority[tp->type]) != 0) return 0;
+                if (evalop(op_priority[tp->type]) != 0) return 0;
                 *op++ = tp->type;
                 rand  = 0;
                 continue;
@@ -188,7 +190,7 @@ long eval(Tokenrow* trp, int kw) {
 
             case RP :
                 if (!rand) goto syntax;
-                if (evalop(priority[RP]) != 0) return 0;
+                if (evalop(op_priority[RP]) != 0) return 0;
                 if (op <= ops || op[-1] != LP) goto syntax;
                 op--;
                 continue;
@@ -197,7 +199,7 @@ long eval(Tokenrow* trp, int kw) {
         }
     }
     if (rand == 0) goto syntax;
-    if (evalop(priority[END]) != 0) return 0;
+    if (evalop(op_priority[END]) != 0) return 0;
     if (op != &ops[1] || vp != &vals[1]) {
         error(ERROR, "Botch in #if/#elif");
         return 0;
@@ -216,15 +218,15 @@ int evalop(struct pri pri) {
 
     rv2   = 0;
     rtype = 0;
-    while (pri.pri < priority[op[-1]].pri) {
+    while (pri.pri < op_priority[op[-1]].pri) {
         oper = *--op;
-        if (priority[oper].arity == 2) {
+        if (op_priority[oper].arity == 2) {
             v2  = *--vp;
             rv2 = v2.val;
         }
         v1  = *--vp;
         rv1 = v1.val;
-        switch (priority[oper].ctype) {
+        switch (op_priority[oper].ctype) {
             case 0 :
             default : error(WARNING, "Syntax error in #if/#endif"); return 1;
             case ARITH :
@@ -234,7 +236,7 @@ int evalop(struct pri pri) {
                 else
                     rtype = SGN;
                 if (v1.type == UND || v2.type == UND) rtype = UND;
-                if (priority[oper].ctype == RELAT && rtype == UNS) {
+                if (op_priority[oper].ctype == RELAT && rtype == UNS) {
                     oper  |= UNSMARK;
                     rtype  = SGN;
                 }

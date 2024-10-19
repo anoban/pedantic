@@ -11,7 +11,7 @@ struct token nltoken = { NL, 0, 0, 0, 1, (uchar*) "\n" };
 char*        curtime;
 int          incdepth;
 int          ifdepth;
-int          ifsatisfied[NIF];
+int          ifsatisfied[MAX_NESTED_IF_DEPTH];
 int          skipping;
 
 int main(int argc, char** argv) {
@@ -61,7 +61,7 @@ void process(Tokenrow* trp) {
             trp->tp += 1;
             control(trp);
         } else if (!skipping && anymacros)
-            expandrow(trp, NULL, Notinmacro);
+            expandrow(trp, NULL, NOT_IN_MACRO);
         if (skipping) setempty(trp);
         puttokens(trp);
         anymacros        = 0;
@@ -96,7 +96,7 @@ void control(Tokenrow* trp) {
             case KIFDEF :
             case KIFNDEF :
             case KIF :
-                if (++ifdepth >= NIF) error(FATAL, "#if too deeply nested");
+                if (++ifdepth >= MAX_NESTED_IF_DEPTH) error(FATAL, "#if too deeply nested");
                 ++cursource->ifdepth;
                 return;
 
@@ -131,7 +131,7 @@ void control(Tokenrow* trp) {
         case KIFDEF :
         case KIFNDEF :
         case KIF :
-            if (++ifdepth >= NIF) error(FATAL, "#if too deeply nested");
+            if (++ifdepth >= MAX_NESTED_IF_DEPTH) error(FATAL, "#if too deeply nested");
             ++cursource->ifdepth;
             ifsatisfied[ifdepth] = 0;
             if (eval(trp, np->val))
@@ -190,7 +190,7 @@ void control(Tokenrow* trp) {
 
         case KLINE :
             trp->tp = tp + 1;
-            expandrow(trp, "<line>", Notinmacro);
+            expandrow(trp, "<line>", NOT_IN_MACRO);
             tp = trp->bp + 2;
 kline:
             if (tp + 1 >= trp->lp || tp->type != NUMBER || tp + 3 < trp->lp ||
@@ -235,7 +235,7 @@ void* domalloc(int size) {
 
 void dofree(void* p) { free(p); }
 
-void error(enum errtype type, char* string, ...) {
+void error(enum ErrorKind type, char* string, ...) {
     va_list   ap;
     char *    cp, *ep;
     Token*    tp;

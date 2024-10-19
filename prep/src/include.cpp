@@ -1,6 +1,6 @@
 #include <prep.hpp>
 
-Includelist includelist[NINCLUDE];
+Includelist includelist[MAX_INCLUDE_DIRS];
 
 char* objname;
 
@@ -13,7 +13,7 @@ void doinclude(Tokenrow* trp) {
     if (trp->tp >= trp->lp) goto syntax;
     if (trp->tp->type != STRING && trp->tp->type != LT) {
         len = trp->tp - trp->bp;
-        expandrow(trp, "<include>", Notinmacro);
+        expandrow(trp, "<include>", NOT_IN_MACRO);
         trp->tp = trp->bp + len;
     }
     if (trp->tp->type == STRING) {
@@ -40,7 +40,7 @@ void doinclude(Tokenrow* trp) {
         fd = open(fname, 0);
         strcpy(iname, fname);
     } else
-        for (fd = -1, i = NINCLUDE - 1; i >= 0; i--) {
+        for (fd = -1, i = MAX_INCLUDE_DIRS - 1; i >= 0; i--) {
             ip = &includelist[i];
             if (ip->file == NULL || ip->deleted || (angled && ip->always == 0)) continue;
             if (strlen(fname) + strlen(ip->file) + 2 > sizeof(iname)) continue;

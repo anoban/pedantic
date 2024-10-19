@@ -162,7 +162,7 @@ void expand(Tokenrow* trp, Nlist* np, int inmacro) {
     Tokenrow  ntr;
     int       ntokc, narg, i;
     Token*    tp;
-    Tokenrow* atr[NARG + 1];
+    Tokenrow* atr[MAX_MACRO_ARGS + 1];
     int       hs;
 
     copytokenrow(&ntr, np->vp); /* copy macro value */
@@ -279,7 +279,7 @@ int gatherargs(Tokenrow* trp, Tokenrow** atr, int dots, int* narg) {
         if (lp->type == DSHARP) lp->type = DSHARP1; /* ## not special in arg */
         if ((lp->type == COMMA && parens == 0) || (parens < 0 && (lp - 1)->type != LP)) {
             if (lp->type == COMMA && dots && *narg == dots - 1) continue;
-            if (*narg >= NARG - 1) error(FATAL, "Sorry, too many macro arguments");
+            if (*narg >= MAX_MACRO_ARGS - 1) error(FATAL, "Sorry, too many macro arguments");
             ttr.bp = ttr.tp = bp;
             ttr.lp          = lp;
             atr[(*narg)++]  = normtokenrow(&ttr);
@@ -317,7 +317,7 @@ void substargs(Nlist* np, Tokenrow* rtr, Tokenrow** atr) {
                 insertrow(rtr, 1, atr[argno]);
             else {
                 copytokenrow(&tatr, atr[argno]);
-                expandrow(&tatr, "<macro>", Inmacro);
+                expandrow(&tatr, "<macro>", IN_MACRO);
                 insertrow(rtr, 1, &tatr);
                 dofree(tatr.bp);
             }

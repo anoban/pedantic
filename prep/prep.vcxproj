@@ -141,14 +141,14 @@
     <ClInclude Include="u.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="eval.cpp" />
-    <ClCompile Include="hideset.cpp" />
-    <ClCompile Include="include.cpp" />
-    <ClCompile Include="lex.cpp" />
-    <ClCompile Include="macro.cpp" />
-    <ClCompile Include="nlist.cpp" />
-    <ClCompile Include="prep.cpp" />
-    <ClCompile Include="tokens.cpp" />
+    <ClCompile Include="src\eval.cpp" />
+    <ClCompile Include="src\hideset.cpp" />
+    <ClCompile Include="src\include.cpp" />
+    <ClCompile Include="src\lex.cpp" />
+    <ClCompile Include="src\macro.cpp" />
+    <ClCompile Include="src\nlist.cpp" />
+    <ClCompile Include="src\prep.cpp" />
+    <ClCompile Include="src\tokens.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

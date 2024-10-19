@@ -23,28 +23,28 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="eval.cpp">
+    <ClCompile Include="src\eval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hideset.cpp">
+    <ClCompile Include="src\hideset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="include.cpp">
+    <ClCompile Include="src\include.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lex.cpp">
+    <ClCompile Include="src\lex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="macro.cpp">
+    <ClCompile Include="src\macro.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nlist.cpp">
+    <ClCompile Include="src\nlist.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="prep.cpp">
+    <ClCompile Include="src\prep.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tokens.cpp">
+    <ClCompile Include="src\tokens.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
