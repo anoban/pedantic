@@ -20,7 +20,7 @@ static constexpr int _UCRT_ALLOC_ERROR { 0xEE }; // an error code to indicate th
 #endif
 
 // token kinds recognized as valid inside a macro definition
-enum class token_type : unsigned {
+enum class token_type : unsigned { // NOLINT(performance-enum-size)
     END,
     UNCLASS,
     NAME,
@@ -84,16 +84,16 @@ enum class token_type : unsigned {
 };
 
 // recognized preprocessor keywords/directives/macros
-enum class keyword_type : unsigned {
-    KIF,      // #if
-    KIFDEF,   // #ifdef
-    KIFNDEF,  // #ifndef
-    KELIF,    // #elif
-    KELSE,    // #else
-    KENDIF,   // #endif
-    KINCLUDE, // #include
-    KDEFINE,  // #define
-    KUNDEF,   // #undef
+enum class keyword_type : unsigned { // NOLINT(performance-enum-size)
+    KIF,                             // #if
+    KIFDEF,                          // #ifdef
+    KIFNDEF,                         // #ifndef
+    KELIF,                           // #elif
+    KELSE,                           // #else
+    KENDIF,                          // #endif
+    KINCLUDE,                        // #include
+    KDEFINE,                         // #define
+    KUNDEF,                          // #undef
     KLINE,
     KERROR,   // #error
     KWARNING, // #warning - a directive provided as an extension to ISO standard C
@@ -108,14 +108,14 @@ enum class keyword_type : unsigned {
 };
 
 // macro keyword properties
-enum class keyword_props : unsigned {
-    IS_DEFINED_VALUE        = 0x01, // a macro with a #defined value
-    IS_KEYWORD              = 0x02, // a preprocessor keyword
-    IS_UNCHANGEABLE         = 0x04, // a macro that can't be #defined (redefined) by users, e.g builtin macros
-    IS_BUILTIN              = 0x08, // a builtin macro, e.g. __LINE__
-    IS_VARIADIC_MACRO       = 0x10, // variadic macro
-    IS_BUILTIN_UNCHANGEABLE = 0x0C, // a builtin unchangeable macro
-    IS_DEFINED_UNCHANGEABLE = 0x05  // a builtin unchangeable macro
+enum class keyword_props : unsigned { // NOLINT(performance-enum-size)
+    IS_DEFINED_VALUE        = 0x01,   // a macro with a #defined value
+    IS_KEYWORD              = 0x02,   // a preprocessor keyword
+    IS_UNCHANGEABLE         = 0x04,   // a macro that can't be #defined (redefined) by users, e.g builtin macros
+    IS_BUILTIN              = 0x08,   // a builtin macro, e.g. __LINE__
+    IS_VARIADIC_MACRO       = 0x10,   // variadic macro
+    IS_BUILTIN_UNCHANGEABLE = 0x0C,   // a builtin unchangeable macro
+    IS_DEFINED_UNCHANGEABLE = 0x05    // a builtin unchangeable macro
 };
 
 static constexpr size_t EOB { 0xFE };  // sentinel for end of input buffer
@@ -130,7 +130,7 @@ struct token final {
         unsigned short hideset;
         unsigned int   wslen;
         unsigned int   len;
-        unsigned char* t;
+        char*          t;
 };
 
 struct token_row final {
@@ -240,7 +240,7 @@ void           clearwstab(void);
 extern char*        outp;
 extern token        nltoken;
 extern source*      cursource;
-extern char*        curtime;
+extern char         current_time[];
 extern int          incdepth;
 extern int          ifdepth;
 extern int          ifsatisfied[MAX_NESTED_IF_DEPTH];

@@ -1,106 +1,107 @@
+#include <array>
+
 #include <prep.hpp>
 
-static char  wbuf[2 * OUTPUT_BUFFER_SIZE];
-static char* wbp                         = wbuf;
+static char        writebuffer[OUTPUT_BUFFER_SIZE << 1];
+static char* const _ptrwritebuffer = writebuffer;
 
 // true for tokens that don't need whitespace when they get inserted by macro expansion
-static constexpr bool whitespace_table[] = {
-    false, // END */
-    false, // UNCLASS */
-    false, // NAME */
-    false, // NUMBER */
-    false, // STRING */
-    false, // CCON */
-    true,  // NL */
-    false, // WS */
-    false, // DSHARP */
-    false, // EQ */
-    false, // NEQ */
-    false, // LEQ */
-    false, // GEQ */
-    false, // LSH */
-    false, // RSH */
-    false, // LAND */
-    false, // LOR */
-    false, // PPLUS */
-    false, // MMINUS */
-    false, // ARROW */
-    true,  // SBRA */
-    true,  // SKET */
-    true,  // LP */
-    true,  // RP */
-    false, // DOT */
-    false, // AND */
-    false, // STAR */
-    false, // PLUS */
-    false, // MINUS */
-    false, // TILDE */
-    false, // NOT */
-    false, // SLASH */
-    false, // PCT */
-    false, // LT */
-    false, // GT */
-    false, // CIRC */
-    false, // OR */
-    false, // QUEST */
-    false, // COLON */
-    false, // ASGN */
-    true,  // COMMA */
-    false, // SHARP */
-    true,  // SEMIC */
-    true,  // CBRA */
-    true,  // CKET */
-    false, // ASPLUS */
-    false, // ASMINUS */
-    false, // ASSTAR */
-    false, // ASSLASH */
-    false, // ASPCT */
-    false, // ASCIRC */
-    false, // ASLSH */
-    false, // ASRSH */
-    false, // ASOR */
-    false, // ASAND */
-    false, // ELLIPS */
-    false, // DSHARP1 */
-    false, // NAME1 */
-    false, // DEFINED */
-    false, // UMINUS */
+static constexpr std::array<bool, 60> whitespace_table {
+    false, // END
+    false, // UNCLASS
+    false, // NAME
+    false, // NUMBER
+    false, // STRING
+    false, // CCON
+    true,  // NL
+    false, // WS
+    false, // DSHARP
+    false, // EQ
+    false, // NEQ
+    false, // LEQ
+    false, // GEQ
+    false, // LSH
+    false, // RSH
+    false, // LAND
+    false, // LOR
+    false, // PPLUS
+    false, // MMINUS
+    false, // ARROW
+    true,  // SBRA
+    true,  // SKET
+    true,  // LP
+    true,  // RP
+    false, // DOT
+    false, // AND
+    false, // STAR
+    false, // PLUS
+    false, // MINUS
+    false, // TILDE
+    false, // NOT
+    false, // SLASH
+    false, // PCT
+    false, // LT
+    false, // GT
+    false, // CIRC
+    false, // OR
+    false, // QUEST
+    false, // COLON
+    false, // ASGN
+    true,  // COMMA
+    false, // SHARP
+    true,  // SEMIC
+    true,  // CBRA
+    true,  // CKET
+    false, // ASPLUS
+    false, // ASMINUS
+    false, // ASSTAR
+    false, // ASSLASH
+    false, // ASPCT
+    false, // ASCIRC
+    false, // ASLSH
+    false, // ASRSH
+    false, // ASOR
+    false, // ASAND
+    false, // ELLIPS
+    false, // DSHARP1
+    false, // NAME1
+    false, // DEFINED
+    false, // UMINUS
 };
 
-void maketokenrow(int size, token_row* trp) noexcept {
-    trp->max = size;
+// creates a new token row
+void maketokenrow(_In_ const long long size, _Inout_ token_row* const tknrow) noexcept {
+    tknrow->max = size;
     if (size > 0)
-        trp->bp = (token*) _checked_malloc(size * sizeof(token));
+        tknrow->bp = reinterpret_cast<token*>(_checked_malloc(size * sizeof(token)));
     else
-        trp->bp = NULL;
-    trp->tp = trp->bp;
-    trp->lp = trp->bp;
+        tknrow->bp = nullptr;
+
+    tknrow->lp = tknrow->tp = tknrow->bp;
 }
 
-token* growtokenrow(token_row* trp) {
-    int ncur  = trp->tp - trp->bp;
-    int nlast = trp->lp - trp->bp;
+token* growtokenrow(_Inout_ token_row* const tknrow) noexcept {
+    int ncur    = tknrow->tp - tknrow->bp;
+    int nlast   = tknrow->lp - tknrow->bp;
 
-    trp->max  = 3 * trp->max / 2 + 1;
-    trp->bp   = (token*) realloc(trp->bp, trp->max * sizeof(token));
-    trp->lp   = &trp->bp[nlast];
-    trp->tp   = &trp->bp[ncur];
-    return trp->lp;
+    tknrow->max = 3 * tknrow->max / 2 + 1;
+    tknrow->bp  = (token*) realloc(tknrow->bp, tknrow->max * sizeof(token));
+    tknrow->lp  = &tknrow->bp[nlast];
+    tknrow->tp  = &tknrow->bp[ncur];
+    return tknrow->lp;
 }
 
-/*
- * Compare a row of tokens, ignoring the content of WS; return !=0 if different
- */
-int comparetokens(token_row* tr1, token_row* tr2) {
-    token *tp1, *tp2;
+// compare a row of tokens, ignoring whitespaces and return a non zero value if different
+int comparetokens(token_row* tknrow_0, token_row* tknrow_1) noexcept {
+    token *tp1 = tknrow_0->tp, *tp2 = tknrow_1->tp;
 
-    tp1 = tr1->tp;
-    tp2 = tr2->tp;
-    if (tr1->lp - tp1 != tr2->lp - tp2) return 1;
-    for (; tp1 < tr1->lp; tp1++, tp2++)
+    if (tknrow_0->lp - tp1 != tknrow_1->lp - tp2) return 1;
+
+    for (; tp1 < tknrow_0->lp; tp1++, tp2++)
         if (tp1->type != tp2->type || (tp1->wslen == 0) != (tp2->wslen == 0) || tp1->len != tp2->len ||
-            strncmp((char*) tp1->t, (char*) tp2->t, tp1->len) != 0)
+            ::strncmp(tp1->t, tp2->t, tp1->len) != 0)
             return 1;
+
     return 0;
 }
 
@@ -260,18 +261,19 @@ void puttokens(token_row* trp) {
         }
         if (Mflag == 0) {
             if (len > OUTPUT_BUFFER_SIZE / 2) { /* handle giant token */
-                if (wbp > wbuf) write(1, wbuf, wbp - wbuf);
+                if (_ptrwritebuffer > writebuffer) write(1, writebuffer, _ptrwritebuffer - writebuffer);
                 write(1, p, len);
-                wbp = wbuf;
+                _ptrwritebuffer = writebuffer;
             } else {
-                memcpy(wbp, p, len);
-                wbp += len;
+                memcpy(_ptrwritebuffer, p, len);
+                _ptrwritebuffer += len;
             }
         }
-        if (wbp >= &wbuf[OUTPUT_BUFFER_SIZE]) {
-            write(1, wbuf, OUTPUT_BUFFER_SIZE);
-            if (wbp > &wbuf[OUTPUT_BUFFER_SIZE]) memcpy(wbuf, wbuf + OUTPUT_BUFFER_SIZE, wbp - &wbuf[OUTPUT_BUFFER_SIZE]);
-            wbp -= OUTPUT_BUFFER_SIZE;
+        if (_ptrwritebuffer >= &writebuffer[OUTPUT_BUFFER_SIZE]) {
+            write(1, writebuffer, OUTPUT_BUFFER_SIZE);
+            if (_ptrwritebuffer > &writebuffer[OUTPUT_BUFFER_SIZE])
+                memcpy(writebuffer, writebuffer + OUTPUT_BUFFER_SIZE, _ptrwritebuffer - &writebuffer[OUTPUT_BUFFER_SIZE]);
+            _ptrwritebuffer -= OUTPUT_BUFFER_SIZE;
         }
     }
     trp->tp = tp;
@@ -279,9 +281,9 @@ void puttokens(token_row* trp) {
 }
 
 void flushout(void) {
-    if (wbp > wbuf) {
-        write(1, wbuf, wbp - wbuf);
-        wbp = wbuf;
+    if (_ptrwritebuffer > writebuffer) {
+        write(1, writebuffer, _ptrwritebuffer - writebuffer);
+        _ptrwritebuffer = writebuffer;
     }
 }
 

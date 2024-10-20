@@ -3,35 +3,35 @@
 
 #include <prep.hpp>
 
-static constexpr size_t OUT_BUFF_SIZE { 16'384 };
+static constexpr size_t OUTBUFF_SIZE { 16'384 }, TIMESTR_SIZE { 0xFF };
 
-char    outbuf[OUT_BUFF_SIZE];
-char*   outp { outbuf };
+char    __outbuffer[OUTBUFF_SIZE];
+char*   outp { __outbuffer };
 source* cursource {};
 int     nerrs {};
 token   nltoken { token_type::NL, 0, 0, 0, 1, "\n" };
-char*   curtime {};
+char    current_time[TIMESTR_SIZE] {}; // a buffer to store the string representation of current time
 int     incdepth {};
 int     ifdepth {};
 int     ifsatisfied[MAX_NESTED_IF_DEPTH] {};
 int     skipping {};
 
 int wmain(_In_opt_ int argc, _In_opt_count_(argc) wchar_t* argv[]) {
-    token_row    tr;
-    const time_t now { time(nullptr) };
-    char         ebuf[OUT_BUFF_SIZE];
+    const time_t now { ::time(nullptr) };
+    ::_ctime64_s(current_time, TIMESTR_SIZE, &now);
 
-    setbuf(stderr, ebuf);
+    char error_buffer[OUTBUFF_SIZE] {};
+    ::setbuf(stderr, error_buffer);
 
-    curtime = ctime(&now);
-    maketokenrow(3, &tr);
+    token_row tknrow {};
+    maketokenrow(3, &tknrow);
     expandlex();
 
     setup(argc, argv);
     fixlex();
     iniths();
     genline();
-    process(&tr);
+    process(&tknrow);
     flushout();
     fflush(stderr);
     exits(nerrs ? "errors" : 0);
@@ -45,7 +45,7 @@ void process(_In_ token_row* const tknrw) noexcept {
     for (;;) {
         if (tknrw->tp >= tknrw->lp) {
             tknrw->tp = tknrw->lp  = tknrw->bp;
-            outp                   = outbuf;
+            outp                   = __outbuffer;
             anymacros             |= gettokens(tknrw, 1);
             tknrw->tp              = tknrw->bp;
         }
