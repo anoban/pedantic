@@ -27,60 +27,60 @@ enum class token_type : unsigned {
     NUMBER,
     STRING,
     CCON,
-    NL,
-    WS,
-    DSHARP,
-    EQ,
-    NEQ,
-    LEQ,
-    GEQ,
-    LSH,
-    RSH,
-    LAND,
-    LOR,
+    NL,     // newline
+    WS,     // whitespace
+    DSHARP, // ##
+    EQ,     // =
+    NEQ,    // !=
+    LEQ,    // <=
+    GEQ,    // >=
+    LSH,    // <<
+    RSH,    // >>
+    LAND,   // &&
+    LOR,    // ||
     PPLUS,
     MMINUS,
-    ARROW,
+    ARROW, // ->
     SBRA,
     SKET,
-    LP,
-    RP,
-    DOT,
-    AND,
-    STAR,
-    PLUS,
-    MINUS,
-    TILDE,
-    NOT,
-    SLASH,
-    PCT,
-    LT,
-    GT,
+    LP,    // (
+    RP,    // )
+    DOT,   // .
+    AND,   // &
+    STAR,  // *
+    PLUS,  // +
+    MINUS, // -
+    TILDE, // ~
+    NOT,   //
+    SLASH, // /
+    PCT,   // %
+    LT,    // <
+    GT,    // >
     CIRC,
-    OR,
-    QUEST,
-    COLON,
-    ASGN,
-    COMMA,
-    SHARP,
-    SEMIC,
+    OR,    //
+    QUEST, // ?
+    COLON, // :
+    ASGN,  // =
+    COMMA, // ,
+    SHARP, // #
+    SEMIC, // ;
     CBRA,
     CKET,
-    ASPLUS,
-    ASMINUS,
-    ASSTAR,
-    ASSLASH,
-    ASPCT,
+    ASPLUS,  // +=
+    ASMINUS, // -=
+    ASSTAR,  // *=
+    ASSLASH, // /=
+    ASPCT,   // %=
     ASCIRC,
-    ASLSH,
-    ASRSH,
-    ASOR,
-    ASAND,
-    ELLIPS,
+    ASLSH,  // <<=
+    ASRSH,  // >>=
+    ASOR,   // |=
+    ASAND,  // &=
+    ELLIPS, // ...
     DSHARP1,
     NAME1,
     DEFINED,
-    UMINUS
+    UMINUS // unary -
 };
 
 // recognized preprocessor keywords/directives/macros
@@ -120,7 +120,7 @@ enum class keyword_props : unsigned {
 
 static constexpr size_t EOB { 0xFE };  // sentinel for end of input buffer
 static constexpr size_t EOFC { 0xFD }; // sentinel for end of input file
-static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure token sep.
+static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure token separator
 
 enum { NOT_IN_MACRO, IN_MACRO };
 

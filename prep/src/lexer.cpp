@@ -5,7 +5,7 @@
  *   when in state state, and one of the characters
  *   in ch arrives, enter nextstate.
  *   States >= S_SELF are either final, or at least require special action.
- *   In 'fsm' there is a line for each state X charset X nextstate.
+ *   In 'fsmachine' there is a line for each state X charset X nextstate.
  *   List chars that overwrite previous entries later (e.g. ALPHABET
  *   can be overridden by '_' by a later entry; and character_classl::xx is the
  *   the universal set, and should always be first.
@@ -29,11 +29,11 @@ static constexpr size_t FSM_MAX_STATES { 32 };
 #define UTF3(c)       ((c) >= 0xE0 && (c) < 0xF0) /* 3-char UTF seq */
 
 // character classes
-enum class character_class : unsigned { WHITESPACE = 0x01, ALPHABET, NUMBER, EOFILE, XX };
+enum class character_class : char { WHITESPACE = 0x01, ALPHABET, NUMBER, EOFILE, XX };
 
 // valid states for the finite state machine
 enum class fsm_state : unsigned {
-    START = 0,
+    START,
     NUM1,
     NUM2,
     NUM3,
@@ -79,27 +79,27 @@ enum class fsm_state : unsigned {
 };
 
 struct fsm {
-        fsm_state     state;     /* if in this state */
-        unsigned char ch[4];     /* and see one of these characters */
-        int           nextstate; /* enter this state if +ve */
+        fsm_state state;     /* if in this state */
+        char      ch[4];     /* and see one of these characters */
+        int       nextstate; /* enter this state if +ve */
 };
 
-/*const*/ struct fsm fsm[] = {
-    /* start state */
+/*const*/
+fsm fsmachine[] = {
     fsm_state::START,
     { character_class::XX },
     ACT(UNCLASS, S_SELF),
-    START,
+    fsm_state::START,
     { ' ', '\t', '\v', '\r' },
     WS1,
     START,
-    { character_classl::NUMBER },
+    { C_NUM },
     NUM1,
     START,
     { '.' },
     NUM3,
     START,
-    { ALPHABET },
+    { C_ALPH },
     ID1,
     START,
     { 'L' },
@@ -191,10 +191,10 @@ struct fsm {
 
     /* saw a digit */
     NUM1,
-    { character_classl::xx },
+    { C_XX },
     ACT(NUMBER, S_SELFB),
     NUM1,
-    { character_classl::NUMBER, ALPHABET, '.' },
+    { C_NUM, C_ALPH, '.' },
     NUM1,
     NUM1,
     { 'E', 'e' },
@@ -205,13 +205,13 @@ struct fsm {
 
     /* saw possible start of exponent, digits-e */
     NUM2,
-    { character_classl::xx },
+    { C_XX },
     ACT(NUMBER, S_SELFB),
     NUM2,
     { '+', '-' },
     NUM1,
     NUM2,
-    { character_classl::NUMBER, ALPHABET },
+    { C_NUM, C_ALPH },
     NUM1,
     NUM2,
     { '_' },
@@ -219,20 +219,20 @@ struct fsm {
 
     /* saw a '.', which could be a number or an operator */
     NUM3,
-    { character_classl::xx },
+    { C_XX },
     ACT(DOT, S_SELFB),
     NUM3,
     { '.' },
     DOTS1,
     NUM3,
-    { character_classl::NUMBER },
+    { C_NUM },
     NUM1,
 
     DOTS1,
-    { character_classl::xx },
+    { C_XX },
     ACT(UNCLASS, S_SELFB),
     DOTS1,
-    { character_classl::NUMBER },
+    { C_NUM },
     NUM1,
     DOTS1,
     { '.' },
@@ -240,18 +240,18 @@ struct fsm {
 
     /* saw a letter or _ */
     ID1,
-    { character_classl::xx },
+    { C_XX },
     ACT(NAME, S_NAME),
     ID1,
-    { ALPHABET, character_classl::NUMBER },
+    { C_ALPH, C_NUM },
     ID1,
 
     /* saw L (start of wide string?) */
     ST1,
-    { character_classl::xx },
+    { C_XX },
     ACT(NAME, S_NAME),
     ST1,
-    { ALPHABET, character_classl::NUMBER },
+    { C_ALPH, C_NUM },
     ID1,
     ST1,
     { '"' },
@@ -262,7 +262,7 @@ struct fsm {
 
     /* saw " beginning string */
     ST2,
-    { character_classl::xx },
+    { C_XX },
     ST2,
     ST2,
     { '"' },
@@ -279,7 +279,7 @@ struct fsm {
 
     /* saw \ in string */
     ST3,
-    { character_classl::xx },
+    { C_XX },
     ST2,
     ST3,
     { '\n' },
@@ -290,7 +290,7 @@ struct fsm {
 
     /* saw ' beginning character const */
     CC1,
-    { character_classl::xx },
+    { C_XX },
     CC1,
     CC1,
     { '\'' },
@@ -307,7 +307,7 @@ struct fsm {
 
     /* saw \ in ccon */
     CC2,
-    { character_classl::xx },
+    { C_XX },
     CC1,
     CC2,
     { '\n' },
@@ -318,7 +318,7 @@ struct fsm {
 
     /* saw /, perhaps start of comment */
     COM1,
-    { character_classl::xx },
+    { C_XX },
     ACT(SLASH, S_SELFB),
     COM1,
     { '=' },
@@ -332,7 +332,7 @@ struct fsm {
 
     /* saw "/*", start of comment */
     COM2,
-    { character_classl::xx },
+    { C_XX },
     COM2,
     COM2,
     { '\n' },
@@ -346,7 +346,7 @@ struct fsm {
 
     /* saw the * possibly ending a comment */
     COM3,
-    { character_classl::xx },
+    { C_XX },
     COM2,
     COM3,
     { '\n' },
@@ -363,7 +363,7 @@ struct fsm {
 
     /* // comment */
     COM4,
-    { character_classl::xx },
+    { C_XX },
     COM4,
     COM4,
     { '\n' },
@@ -374,7 +374,7 @@ struct fsm {
 
     /* saw white space, eat it up */
     WS1,
-    { character_classl::xx },
+    { C_XX },
     S_WS,
     WS1,
     { ' ', '\t', '\v', '\r' },
@@ -382,7 +382,7 @@ struct fsm {
 
     /* saw -, check --, -=, -> */
     MINUS1,
-    { character_classl::xx },
+    { C_XX },
     ACT(MINUS, S_SELFB),
     MINUS1,
     { '-' },
@@ -396,7 +396,7 @@ struct fsm {
 
     /* saw +, check ++, += */
     PLUS1,
-    { character_classl::xx },
+    { C_XX },
     ACT(PLUS, S_SELFB),
     PLUS1,
     { '+' },
@@ -407,7 +407,7 @@ struct fsm {
 
     /* saw <, check <<, <<=, <= */
     LT1,
-    { character_classl::xx },
+    { C_XX },
     ACT(LT, S_SELFB),
     LT1,
     { '<' },
@@ -416,7 +416,7 @@ struct fsm {
     { '=' },
     ACT(LEQ, S_SELF),
     LT2,
-    { character_classl::xx },
+    { C_XX },
     ACT(LSH, S_SELFB),
     LT2,
     { '=' },
@@ -424,7 +424,7 @@ struct fsm {
 
     /* saw >, check >>, >>=, >= */
     GT1,
-    { character_classl::xx },
+    { C_XX },
     ACT(GT, S_SELFB),
     GT1,
     { '>' },
@@ -433,7 +433,7 @@ struct fsm {
     { '=' },
     ACT(GEQ, S_SELF),
     GT2,
-    { character_classl::xx },
+    { C_XX },
     ACT(RSH, S_SELFB),
     GT2,
     { '=' },
@@ -441,7 +441,7 @@ struct fsm {
 
     /* = */
     ASG1,
-    { character_classl::xx },
+    { C_XX },
     ACT(ASGN, S_SELFB),
     ASG1,
     { '=' },
@@ -449,7 +449,7 @@ struct fsm {
 
     /* ! */
     NOT1,
-    { character_classl::xx },
+    { C_XX },
     ACT(NOT, S_SELFB),
     NOT1,
     { '=' },
@@ -457,7 +457,7 @@ struct fsm {
 
     /* & */
     AND1,
-    { character_classl::xx },
+    { C_XX },
     ACT(AND, S_SELFB),
     AND1,
     { '&' },
@@ -468,7 +468,7 @@ struct fsm {
 
     /* | */
     OR1,
-    { character_classl::xx },
+    { C_XX },
     ACT(OR, S_SELFB),
     OR1,
     { '|' },
@@ -479,7 +479,7 @@ struct fsm {
 
     /* # */
     SHARP1,
-    { character_classl::xx },
+    { C_XX },
     ACT(SHARP, S_SELFB),
     SHARP1,
     { '#' },
@@ -487,7 +487,7 @@ struct fsm {
 
     /* % */
     PCT1,
-    { character_classl::xx },
+    { C_XX },
     ACT(PCT, S_SELFB),
     PCT1,
     { '=' },
@@ -495,7 +495,7 @@ struct fsm {
 
     /* * */
     STAR1,
-    { character_classl::xx },
+    { C_XX },
     ACT(STAR, S_SELFB),
     STAR1,
     { '=' },
@@ -503,7 +503,7 @@ struct fsm {
 
     /* ^ */
     CIRC1,
-    { character_classl::xx },
+    { C_XX },
     ACT(CIRC, S_SELFB),
     CIRC1,
     { '=' },
@@ -520,19 +520,20 @@ void expandlex(void) {
     /*const*/ struct fsm* fp;
     int                   i, j, nstate;
 
-    for (fp = fsm; fp->state >= 0; fp++) {
+    for (fp = fsmachine; fp->state >= 0; fp++) {
         for (i = 0; fp->ch[i]; i++) {
             nstate = fp->nextstate;
             if (nstate >= S_SELF) nstate = ~nstate;
+
             switch (fp->ch[i]) {
-                case character_classl::xx : /* random characters */
+                case character_class::XX : /* random characters */
                     for (j = 0; j < 256; j++) bigfsm[j][fp->state] = nstate;
                     continue;
-                case ALPHABET :
+                case character_class::ALPHABET :
                     for (j = 0; j <= 256; j++)
                         if ('a' <= j && j <= 'z' || 'A' <= j && j <= 'Z' || UTF2(j) || UTF3(j) || j == '_') bigfsm[j][fp->state] = nstate;
                     continue;
-                case character_classl::NUMBER :
+                case character_class::NUMBER :
                     for (j = '0'; j <= '9'; j++) bigfsm[j][fp->state] = nstate;
                     continue;
                 default : bigfsm[fp->ch[i]][fp->state] = nstate;
