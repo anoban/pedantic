@@ -40,32 +40,32 @@ enum class token_type : unsigned { // NOLINT(performance-enum-size)
     LOR,    // ||
     PPLUS,
     MMINUS,
-    ARROW, // ->
-    SBRA,
-    SKET,
-    LP,    // (
-    RP,    // )
-    DOT,   // .
-    AND,   // &
-    STAR,  // *
-    PLUS,  // +
-    MINUS, // -
-    TILDE, // ~
-    NOT,   //
-    SLASH, // /
-    PCT,   // %
-    LT,    // <
-    GT,    // >
-    CIRC,
-    OR,    //
-    QUEST, // ?
-    COLON, // :
-    ASGN,  // =
-    COMMA, // ,
-    SHARP, // #
-    SEMIC, // ;
-    CBRA,
-    CKET,
+    ARROW,   // ->
+    SBRA,    // [
+    SKET,    // ]
+    LP,      // (
+    RP,      // )
+    DOT,     // .
+    AND,     // &
+    STAR,    // *
+    PLUS,    // +
+    MINUS,   // -
+    TILDE,   // ~
+    NOT,     // !
+    SLASH,   // /
+    PCT,     // %
+    LT,      // <
+    GT,      // >
+    CIRC,    // ^
+    OR,      // |
+    QUEST,   // ?
+    COLON,   // :
+    ASGN,    // =
+    COMMA,   // ,
+    SHARP,   // #
+    SEMIC,   // ;
+    CBRA,    // {
+    CKET,    // }
     ASPLUS,  // +=
     ASMINUS, // -=
     ASSTAR,  // *=

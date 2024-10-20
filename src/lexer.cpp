@@ -1,6 +1,9 @@
 #include <array>
+#include <utility>
 
 #include <prep.hpp>
+
+// WHY DID NOT THE PLAN9 IMBECILES EVER THINK OF COMMENTING THEIR SOURCE CODE
 
 /*
  *   Lexical FSM (Finite State Machine) encoding
@@ -20,6 +23,14 @@
  *   Entries have
  *      nextstate: 6 bits; ?\ marker: 1 bit; tokentype: 9 bits.
  */
+
+#ifdef __cpp_lib_to_underlying // C++23
+using std::to_underlying;
+#else
+template<class _Ty> static constexpr typename std::underlying_type<_Ty>::type to_underlying(const _Ty& _enum) noexcept {
+    return static_cast<typename std::underlying_type<_Ty>::type>(_enum);
+}
+#endif
 
 static constexpr size_t FSM_MAX_STATES { 32 };
 
@@ -88,7 +99,7 @@ struct fsm {
 
 /*const*/
 fsm fsmachine[] = {
-    { fsm_state::START, { character_class::XX }, ACT(UNCLASS, S_SELF) },
+    { fsm_state::START, { ::to_underlying(character_class::XX) }, ACT(UNCLASS, S_SELF) },
     { fsm_state::START, { ' ', '\t', '\v', '\r' }, WS1 },
     { fsm_state::START, { character_class::NUMBER }, NUM1 },
     { fsm_state::START, { '.' }, NUM3 },
@@ -124,195 +135,87 @@ fsm fsmachine[] = {
     { fsm_state::START, { '^' }, CIRC1 },
 
     /* saw a digit */
-    NUM1,
-    { C_XX },
-    ACT(NUMBER, S_SELFB),
-    NUM1,
-    { C_NUM, C_ALPH, '.' },
-    NUM1,
-    NUM1,
-    { 'E', 'e' },
-    NUM2,
-    NUM1,
-    { '_' },
-    ACT(NUMBER, S_SELFB),
+    { NUM1, { C_XX }, ACT(NUMBER, S_SELFB) },
+    { NUM1, { C_NUM, C_ALPH, '.' }, NUM1 },
+    { NUM1, { 'E', 'e' }, NUM2 },
+    { NUM1, { '_' }, ACT(NUMBER, S_SELFB) },
 
     /* saw possible start of exponent, digits-e */
-    NUM2,
-    { C_XX },
-    ACT(NUMBER, S_SELFB),
-    NUM2,
-    { '+', '-' },
-    NUM1,
-    NUM2,
-    { C_NUM, C_ALPH },
-    NUM1,
-    NUM2,
-    { '_' },
-    ACT(NUMBER, S_SELFB),
+    { NUM2, { C_XX }, ACT(NUMBER, S_SELFB) },
+    { NUM2, { '+', '-' }, NUM1 },
+    { NUM2, { C_NUM, C_ALPH }, NUM1 },
+    { NUM2, { '_' }, ACT(NUMBER, S_SELFB) },
 
     /* saw a '.', which could be a number or an operator */
-    NUM3,
-    { C_XX },
-    ACT(DOT, S_SELFB),
-    NUM3,
-    { '.' },
-    DOTS1,
-    NUM3,
-    { C_NUM },
-    NUM1,
+    { NUM3, { C_XX }, ACT(DOT, S_SELFB) },
+    { NUM3, { '.' }, DOTS1 },
+    { NUM3, { C_NUM }, NUM1 },
 
-    DOTS1,
-    { C_XX },
-    ACT(UNCLASS, S_SELFB),
-    DOTS1,
-    { C_NUM },
-    NUM1,
-    DOTS1,
-    { '.' },
-    ACT(ELLIPS, S_SELF),
+    { DOTS1, { C_XX }, ACT(UNCLASS, S_SELFB) },
+    { DOTS1, { C_NUM }, NUM1 },
+    { DOTS1, { '.' }, ACT(ELLIPS, S_SELF) },
 
     /* saw a letter or _ */
-    ID1,
-    { C_XX },
-    ACT(NAME, S_NAME),
-    ID1,
-    { C_ALPH, C_NUM },
-    ID1,
+    { ID1, { C_XX }, ACT(NAME, S_NAME) },
+    { ID1, { C_ALPH, C_NUM }, ID1 },
 
     /* saw L (start of wide string?) */
-    ST1,
-    { C_XX },
-    ACT(NAME, S_NAME),
-    ST1,
-    { C_ALPH, C_NUM },
-    ID1,
-    ST1,
-    { '"' },
-    ST2,
-    ST1,
-    { '\'' },
-    CC1,
+    { ST1, { C_XX }, ACT(NAME, S_NAME) },
+    { ST1, { C_ALPH, C_NUM }, ID1 },
+    { ST1, { '"' }, ST2 },
+    { ST1, { '\'' }, CC1 },
 
     /* saw " beginning string */
-    ST2,
-    { C_XX },
-    ST2,
-    ST2,
-    { '"' },
-    ACT(STRING, S_SELF),
-    ST2,
-    { '\\' },
-    ST3,
-    ST2,
-    { '\n' },
-    S_STNL,
-    ST2,
-    { EOFC },
-    S_EOFSTR,
+    { ST2, { C_XX }, ST2 },
+    { ST2, { '"' }, ACT(STRING, S_SELF) },
+    { ST2, { '\\' }, ST3 },
+    { ST2, { '\n' }, S_STNL },
+    { ST2, { EOFC }, S_EOFSTR },
 
     /* saw \ in string */
-    ST3,
-    { C_XX },
-    ST2,
-    ST3,
-    { '\n' },
-    S_STNL,
-    ST3,
-    { EOFC },
-    S_EOFSTR,
+    { ST3, { C_XX }, ST2 },
+    { ST3, { '\n' }, S_STNL },
+    { ST3, { EOFC }, S_EOFSTR },
 
     /* saw ' beginning character const */
-    CC1,
-    { C_XX },
-    CC1,
-    CC1,
-    { '\'' },
-    ACT(CCON, S_SELF),
-    CC1,
-    { '\\' },
-    CC2,
-    CC1,
-    { '\n' },
-    S_STNL,
-    CC1,
-    { EOFC },
-    S_EOFSTR,
+    { CC1, { C_XX }, CC1 },
+    { CC1, { '\'' }, ACT(CCON, S_SELF) },
+    { CC1, { '\\' }, CC2 },
+    { CC1, { '\n' }, S_STNL },
+    { CC1, { EOFC }, S_EOFSTR },
 
     /* saw \ in ccon */
-    CC2,
-    { C_XX },
-    CC1,
-    CC2,
-    { '\n' },
-    S_STNL,
-    CC2,
-    { EOFC },
-    S_EOFSTR,
+    { CC2, { C_XX }, CC1 },
+    { CC2, { '\n' }, S_STNL },
+    { CC2, { EOFC }, S_EOFSTR },
 
     /* saw /, perhaps start of comment */
-    COM1,
-    { C_XX },
-    ACT(SLASH, S_SELFB),
-    COM1,
-    { '=' },
-    ACT(ASSLASH, S_SELF),
-    COM1,
-    { '*' },
-    COM2,
-    COM1,
-    { '/' },
-    COM4,
+    { COM1, { C_XX }, ACT(SLASH, S_SELFB) },
+    { COM1, { '=' }, ACT(ASSLASH, S_SELF) },
+    { COM1, { '*' }, COM2 },
+    { COM1, { '/' }, COM4 },
 
     /* saw "/*", start of comment */
-    COM2,
-    { C_XX },
-    COM2,
-    COM2,
-    { '\n' },
-    S_COMNL,
-    COM2,
-    { '*' },
-    COM3,
-    COM2,
-    { EOFC },
-    S_EOFCOM,
+    { COM2, { C_XX }, COM2 },
+    { COM2, { '\n' }, S_COMNL },
+    { COM2, { '*' }, COM3 },
+    { COM2, { EOFC }, S_EOFCOM },
 
     /* saw the * possibly ending a comment */
-    COM3,
-    { C_XX },
-    COM2,
-    COM3,
-    { '\n' },
-    S_COMNL,
-    COM3,
-    { '*' },
-    COM3,
-    COM3,
-    { '/' },
-    S_COMMENT,
-    COM3,
-    { EOFC },
-    S_EOFCOM,
+    { COM3, { C_XX }, COM2 },
+    { COM3, { '\n' }, S_COMNL },
+    { COM3, { '*' }, COM3 },
+    { COM3, { '/' }, S_COMMENT },
+    { COM3, { EOFC }, S_EOFCOM },
 
     /* // comment */
-    COM4,
-    { C_XX },
-    COM4,
-    COM4,
-    { '\n' },
-    S_NL,
-    COM4,
-    { EOFC },
-    S_EOFCOM,
+    { COM4, { C_XX }, COM4 },
+    { COM4, { '\n' }, S_NL },
+    { COM4, { EOFC }, S_EOFCOM },
 
     /* saw white space, eat it up */
-    WS1,
-    { C_XX },
-    S_WS,
-    WS1,
-    { ' ', '\t', '\v', '\r' },
-    WS1,
+    { WS1, { C_XX }, S_WS },
+    { WS1, { ' ', '\t', '\v', '\r' }, WS1 },
 
     /* saw -, check --, -=, -> */
     MINUS1,
@@ -340,109 +243,52 @@ fsm fsmachine[] = {
     ACT(ASPLUS, S_SELF),
 
     /* saw <, check <<, <<=, <= */
-    LT1,
-    { C_XX },
-    ACT(LT, S_SELFB),
-    LT1,
-    { '<' },
-    LT2,
-    LT1,
-    { '=' },
-    ACT(LEQ, S_SELF),
-    LT2,
-    { C_XX },
-    ACT(LSH, S_SELFB),
-    LT2,
-    { '=' },
-    ACT(ASLSH, S_SELF),
+    { LT1, { C_XX }, ACT(LT, S_SELFB) },
+    { LT1, { '<' }, LT2 },
+    { LT1, { '=' }, ACT(LEQ, S_SELF) },
+    { LT2, { C_XX }, ACT(LSH, S_SELFB) },
+    { LT2, { '=' }, ACT(ASLSH, S_SELF) },
 
     /* saw >, check >>, >>=, >= */
-    GT1,
-    { C_XX },
-    ACT(GT, S_SELFB),
-    GT1,
-    { '>' },
-    GT2,
-    GT1,
-    { '=' },
-    ACT(GEQ, S_SELF),
-    GT2,
-    { C_XX },
-    ACT(RSH, S_SELFB),
-    GT2,
-    { '=' },
-    ACT(ASRSH, S_SELF),
+    { GT1, { C_XX }, ACT(GT, S_SELFB) },
+    { GT1, { '>' }, GT2 },
+    { GT1, { '=' }, ACT(GEQ, S_SELF) },
+    { GT2, { C_XX }, ACT(RSH, S_SELFB) },
+    { GT2, { '=' }, ACT(ASRSH, S_SELF) },
 
     /* = */
-    ASG1,
-    { C_XX },
-    ACT(ASGN, S_SELFB),
-    ASG1,
-    { '=' },
-    ACT(EQ, S_SELF),
+    { ASG1, { C_XX }, ACT(ASGN, S_SELFB) },
+    { ASG1, { '=' }, ACT(EQ, S_SELF) },
 
     /* ! */
-    NOT1,
-    { C_XX },
-    ACT(NOT, S_SELFB),
-    NOT1,
-    { '=' },
-    ACT(NEQ, S_SELF),
+    { NOT1, { C_XX }, ACT(NOT, S_SELFB) },
+    { NOT1, { '=' }, ACT(NEQ, S_SELF) },
 
     /* & */
-    AND1,
-    { C_XX },
-    ACT(AND, S_SELFB),
-    AND1,
-    { '&' },
-    ACT(LAND, S_SELF),
-    AND1,
-    { '=' },
-    ACT(ASAND, S_SELF),
+    { AND1, { C_XX }, ACT(AND, S_SELFB) },
+    { AND1, { '&' }, ACT(LAND, S_SELF) },
+    { AND1, { '=' }, ACT(ASAND, S_SELF) },
 
     /* | */
-    OR1,
-    { C_XX },
-    ACT(OR, S_SELFB),
-    OR1,
-    { '|' },
-    ACT(LOR, S_SELF),
-    OR1,
-    { '=' },
-    ACT(ASOR, S_SELF),
+    { OR1, { C_XX }, ACT(OR, S_SELFB) },
+    { OR1, { '|' }, ACT(LOR, S_SELF) },
+    { OR1, { '=' }, ACT(ASOR, S_SELF) },
 
     /* # */
-    SHARP1,
-    { C_XX },
-    ACT(SHARP, S_SELFB),
-    SHARP1,
-    { '#' },
-    ACT(DSHARP, S_SELF),
+    { SHARP1, { C_XX }, ACT(SHARP, S_SELFB) },
+    { SHARP1, { '#' }, ACT(DSHARP, S_SELF) },
 
     /* % */
-    PCT1,
-    { C_XX },
-    ACT(PCT, S_SELFB),
-    PCT1,
-    { '=' },
-    ACT(ASPCT, S_SELF),
+    { PCT1, { C_XX }, ACT(PCT, S_SELFB) },
+    { PCT1, { '=' }, ACT(ASPCT, S_SELF) },
 
     /* * */
-    STAR1,
-    { C_XX },
-    ACT(STAR, S_SELFB),
-    STAR1,
-    { '=' },
-    ACT(ASSTAR, S_SELF),
+    { STAR1, { C_XX }, ACT(STAR, S_SELFB) },
+    { STAR1, { '=' }, ACT(ASSTAR, S_SELF) },
 
     /* ^ */
-    CIRC1,
-    { C_XX },
-    ACT(CIRC, S_SELFB),
-    CIRC1,
-    { '=' },
-    ACT(ASCIRC, S_SELF),
-
+    { CIRC1, { C_XX }, ACT(CIRC, S_SELFB) },
+    { CIRC1, { '=' }, ACT(ASCIRC, S_SELF) },
     -1
 };
 

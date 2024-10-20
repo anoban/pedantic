@@ -447,13 +447,13 @@ void builtin(token_row* trp, int biname) {
             break;
 
         case KDATE :
-            strncpy(op, curtime + 4, 7);
-            strncpy(op + 7, curtime + 24, 4); /* Plan 9 asctime disobeys standard */
+            strncpy(op, current_time + 4, 7);
+            strncpy(op + 7, current_time + 24, 4); /* Plan 9 asctime disobeys standard */
             op += 11;
             break;
 
         case KTIME :
-            strncpy(op, curtime + 11, 8);
+            strncpy(op, current_time + 11, 8);
             op += 8;
             break;
 
