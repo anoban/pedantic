@@ -13,7 +13,7 @@ struct value final {
 };
 
 // conversion types
-enum class conversion_type : unsigned char { RELAT = 1, ARITH, LOGIC, SPCL, SHIFT, UNARY };
+enum class conversion_type : unsigned char { NONE, RELAT, ARITH, LOGIC, SPCL, SHIFT, UNARY };
 
 struct priority {
         char            pri;
@@ -22,16 +22,16 @@ struct priority {
 };
 
 // operator priority, arity, and conversion type, indexed by tokentype
-constexpr priority op_priority[] = {
-    {  0, 0,                      0 }, // END
-    {  0, 0,                      0 }, // UNCLASS
-    {  0, 0,                      0 }, // NAME
-    {  0, 0,                      0 }, // NUMBER
-    {  0, 0,                      0 }, // STRING
-    {  0, 0,                      0 }, // CCON
-    {  0, 0,                      0 }, // NL
-    {  0, 0,                      0 }, // WS
-    {  0, 0,                      0 }, // DSHARP
+static constexpr priority op_priority[] = {
+    {  0, 0,  conversion_type::NONE }, // END
+    {  0, 0,  conversion_type::NONE }, // UNCLASS
+    {  0, 0,  conversion_type::NONE }, // NAME
+    {  0, 0,  conversion_type::NONE }, // NUMBER
+    {  0, 0,  conversion_type::NONE }, // STRING
+    {  0, 0,  conversion_type::NONE }, // CCON
+    {  0, 0,  conversion_type::NONE }, // NL
+    {  0, 0,  conversion_type::NONE }, // WS
+    {  0, 0,  conversion_type::NONE }, // DSHARP
     { 11, 2, conversion_type::RELAT }, // EQ
     { 11, 2, conversion_type::RELAT }, // NEQ
     { 12, 2, conversion_type::RELAT }, // LEQ
@@ -40,14 +40,14 @@ constexpr priority op_priority[] = {
     { 13, 2, conversion_type::SHIFT }, // RSH
     {  7, 2, conversion_type::LOGIC }, // LAND
     {  6, 2, conversion_type::LOGIC }, // LOR
-    {  0, 0,                      0 }, // PPLUS
-    {  0, 0,                      0 }, // MMINUS
-    {  0, 0,                      0 }, // ARROW
-    {  0, 0,                      0 }, // SBRA
-    {  0, 0,                      0 }, // SKET
-    {  3, 0,                      0 }, // LP
-    {  3, 0,                      0 }, // RP
-    {  0, 0,                      0 }, // DOT
+    {  0, 0,  conversion_type::NONE }, // PPLUS
+    {  0, 0,  conversion_type::NONE }, // MMINUS
+    {  0, 0,  conversion_type::NONE }, // ARROW
+    {  0, 0,  conversion_type::NONE }, // SBRA
+    {  0, 0,  conversion_type::NONE }, // SKET
+    {  3, 0,  conversion_type::NONE }, // LP
+    {  3, 0,  conversion_type::NONE }, // RP
+    {  0, 0,  conversion_type::NONE }, // DOT
     { 10, 2, conversion_type::ARITH }, // AND
     { 15, 2, conversion_type::ARITH }, // STAR
     { 14, 2, conversion_type::ARITH }, // PLUS
@@ -62,25 +62,25 @@ constexpr priority op_priority[] = {
     {  8, 2, conversion_type::ARITH }, // OR
     {  5, 2,  conversion_type::SPCL }, // QUEST
     {  5, 2,  conversion_type::SPCL }, // COLON
-    {  0, 0,                      0 }, // ASGN
-    {  4, 2,                      0 }, // COMMA
-    {  0, 0,                      0 }, // SHARP
-    {  0, 0,                      0 }, // SEMIC
-    {  0, 0,                      0 }, // CBRA
-    {  0, 0,                      0 }, // CKET
-    {  0, 0,                      0 }, // ASPLUS
-    {  0, 0,                      0 }, // ASMINUS
-    {  0, 0,                      0 }, // ASSTAR
-    {  0, 0,                      0 }, // ASSLASH
-    {  0, 0,                      0 }, // ASPCT
-    {  0, 0,                      0 }, // ASCIRC
-    {  0, 0,                      0 }, // ASLSH
-    {  0, 0,                      0 }, // ASRSH
-    {  0, 0,                      0 }, // ASOR
-    {  0, 0,                      0 }, // ASAND
-    {  0, 0,                      0 }, // ELLIPS
-    {  0, 0,                      0 }, // DSHARP1
-    {  0, 0,                      0 }, // NAME1
+    {  0, 0,  conversion_type::NONE }, // ASGN
+    {  4, 2,  conversion_type::NONE }, // COMMA
+    {  0, 0,  conversion_type::NONE }, // SHARP
+    {  0, 0,  conversion_type::NONE }, // SEMIC
+    {  0, 0,  conversion_type::NONE }, // CBRA
+    {  0, 0,  conversion_type::NONE }, // CKET
+    {  0, 0,  conversion_type::NONE }, // ASPLUS
+    {  0, 0,  conversion_type::NONE }, // ASMINUS
+    {  0, 0,  conversion_type::NONE }, // ASSTAR
+    {  0, 0,  conversion_type::NONE }, // ASSLASH
+    {  0, 0,  conversion_type::NONE }, // ASPCT
+    {  0, 0,  conversion_type::NONE }, // ASCIRC
+    {  0, 0,  conversion_type::NONE }, // ASLSH
+    {  0, 0,  conversion_type::NONE }, // ASRSH
+    {  0, 0,  conversion_type::NONE }, // ASOR
+    {  0, 0,  conversion_type::NONE }, // ASAND
+    {  0, 0,  conversion_type::NONE }, // ELLIPS
+    {  0, 0,  conversion_type::NONE }, // DSHARP1
+    {  0, 0,  conversion_type::NONE }, // NAME1
     { 16, 1, conversion_type::UNARY }, // DEFINED
     { 16, 0, conversion_type::UNARY }, // UMINUS
 };
@@ -89,7 +89,7 @@ constexpr priority op_priority[] = {
 int   evalop(struct priority);
 value tokval(token*);
 
-value     vals[NSTAK + 1], *vp;
+value      vals[NSTAK + 1], *vp;
 token_type ops[NSTAK + 1], *op;
 
 // Evaluates an #if #elif #ifdef #ifndef line.  trp->tp points to the keyword.
@@ -105,7 +105,7 @@ long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
             return 0;
         }
         np = lookup(trp->tp, 0);
-        return (keyword == keyword_type::KIFDEF) == (np && np->flag & (ISDEFINED | ISMAC));
+        return (keyword == keyword_type::KIFDEF) == (np && np->flag & (IS_DEFINED_VALUE | IS_BUILTIN));
     }
     ntok           = trp->tp - trp->bp;
     kwdefined->val = keyword_type::KDEFINED; // activate special meaning of defined
@@ -340,12 +340,12 @@ int evalop(struct priority pri) noexcept {
 }
 
 struct value tokval(token* tp) {
-    struct value  v;
-    Nlist*        np;
-    int           i, base, c, longcc;
-    unsigned long n;
-    Rune          r;
-    uchar*        p;
+    struct value   v;
+    Nlist*         np;
+    int            i, base, c, longcc;
+    unsigned long  n;
+    Rune           r;
+    unsigned char* p;
 
     v.type = SGN;
     v.val  = 0;
@@ -353,7 +353,7 @@ struct value tokval(token* tp) {
         case NAME : v.val = 0; break;
 
         case NAME1 :
-            if ((np = lookup(tp, 0)) && np->flag & (ISDEFINED | ISMAC)) v.val = 1;
+            if ((np = lookup(tp, 0)) && np->flag & (IS_DEFINED_VALUE | IS_BUILTIN)) v.val = 1;
             break;
 
         case NUMBER :

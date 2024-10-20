@@ -13,57 +13,61 @@ char         wd[128];
 static constexpr size_t NLIST_SIZE { 128 };
 Nlist*                  nlist[NLIST_SIZE];
 
-struct kwtab {
-        char* kw;
-        int   val;
-        int   flag;
-} kwtab[] = { "if",       KIF,      ISKW,
-              "ifdef",    KIFDEF,   ISKW,
-              "ifndef",   KIFNDEF,  ISKW,
-              "elif",     KELIF,    ISKW,
-              "else",     KELSE,    ISKW,
-              "endif",    KENDIF,   ISKW,
-              "include",  KINCLUDE, ISKW,
-              "define",   KDEFINE,  ISKW,
-              "undef",    KUNDEF,   ISKW,
-              "line",     KLINE,    ISKW,
-              "error",    KERROR,   ISKW,
-              "warning",  KWARNING, ISKW, // extension to ANSI
-              "pragma",   KPRAGMA,  ISKW,
-              "eval",     KEVAL,    ISKW,
-              "defined",  KDEFINED, ISDEFINED + ISUNCHANGE,
-              "__LINE__", KLINENO,  ISMAC + ISUNCHANGE,
-              "__FILE__", KFILE,    ISMAC + ISUNCHANGE,
-              "__DATE__", KDATE,    ISMAC + ISUNCHANGE,
-              "__TIME__", KTIME,    ISMAC + ISUNCHANGE,
-              "__STDC__", KSTDC,    ISUNCHANGE,
-              NULL };
+struct keyword final {
+        const char*   keyword;
+        keyword_type  val;
+        keyword_props flag;
+};
+
+static constexpr keyword keyword_table[] = {
+    {       "if",      keyword_type::KIF,              keyword_props::IS_KEYWORD },
+    {    "ifdef",   keyword_type::KIFDEF,              keyword_props::IS_KEYWORD },
+    {   "ifndef",  keyword_type::KIFNDEF,              keyword_props::IS_KEYWORD },
+    {     "elif",    keyword_type::KELIF,              keyword_props::IS_KEYWORD },
+    {     "else",    keyword_type::KELSE,              keyword_props::IS_KEYWORD },
+    {    "endif",   keyword_type::KENDIF,              keyword_props::IS_KEYWORD },
+    {  "include", keyword_type::KINCLUDE,              keyword_props::IS_KEYWORD },
+    {   "define",  keyword_type::KDEFINE,              keyword_props::IS_KEYWORD },
+    {    "undef",   keyword_type::KUNDEF,              keyword_props::IS_KEYWORD },
+    {     "line",    keyword_type::KLINE,              keyword_props::IS_KEYWORD },
+    {    "error",   keyword_type::KERROR,              keyword_props::IS_KEYWORD },
+    {  "warning", keyword_type::KWARNING,              keyword_props::IS_KEYWORD }, // extension to ANSI
+    {   "pragma",  keyword_type::KPRAGMA,              keyword_props::IS_KEYWORD },
+    {     "eval",    keyword_type::KEVAL,              keyword_props::IS_KEYWORD },
+    {  "defined", keyword_type::KDEFINED, keyword_props::IS_DEFINED_UNCHANGEABLE },
+    { "__LINE__",  keyword_type::KLINENO, keyword_props::IS_BUILTIN_UNCHANGEABLE },
+    { "__FILE__",    keyword_type::KFILE, keyword_props::IS_BUILTIN_UNCHANGEABLE },
+    { "__DATE__",    keyword_type::KDATE, keyword_props::IS_BUILTIN_UNCHANGEABLE },
+    { "__TIME__",    keyword_type::KTIME, keyword_props::IS_BUILTIN_UNCHANGEABLE },
+    { "__STDC__",    keyword_type::KSTDC,         keyword_props::IS_UNCHANGEABLE },
+    nullptr
+};
 
 unsigned long namebit[077 + 1];
 Nlist*        np;
 
 void setup(int argc, char** argv) noexcept {
-    struct kwtab* kp;
-    Nlist*        np;
-    token         t;
-    int           fd, i;
-    char *        fp, *dp;
+    const keyword* kp;
+    Nlist*         np;
+    token          t;
+    int            fd, i;
+    char *         fp, *dp;
     token_row      tr;
-    char*         objtype;
-    char*         includeenv;
-    int           firstinclude;
-    static char   nbuf[40];
-    static token  deftoken[1] = {
-        { NAME, 0, 0, 0, 7, (uchar*) "defined" }
+    char*          objtype;
+    char*          includeenv;
+    int            firstinclude;
+    static char    nbuf[40];
+    static token   deftoken[1] = {
+        { NAME, 0, 0, 0, 7, (unsigned char*) "defined" }
     };
     static token_row deftr        = { deftoken, deftoken, deftoken + 1, 1 };
-    int             debuginclude = 0;
-    int             nodot        = 0;
-    char            xx[2]        = { 0, 0 };
+    int              debuginclude = 0;
+    int              nodot        = 0;
+    char             xx[2]        = { 0, 0 };
 
-    for (kp = kwtab; kp->kw; kp++) {
-        t.t      = (uchar*) kp->kw;
-        t.len    = strlen(kp->kw);
+    for (kp = keyword_table; kp->keyword; kp++) {
+        t.t      = (unsigned char*) kp->keyword;
+        t.len    = strlen(kp->keyword);
         np       = lookup(&t, 1);
         np->flag = kp->flag;
         np->val  = kp->val;
@@ -144,10 +148,10 @@ void setup(int argc, char** argv) noexcept {
     if (argc > 0) {
         if ((fp = strrchr(argv[0], '/')) != NULL) {
             int len = fp - argv[0];
-            dp      = (char*) newstring((uchar*) argv[0], len + 1, 0);
+            dp      = (char*) newstring((unsigned char*) argv[0], len + 1, 0);
             dp[len] = '\0';
         }
-        fp = (char*) newstring((uchar*) argv[0], strlen(argv[0]), 0);
+        fp = (char*) newstring((unsigned char*) argv[0], strlen(argv[0]), 0);
         if ((fd = open(fp, 0)) < 0) error(FATAL, "Can't open input file %s", fp);
     }
     if (argc > 1) {
@@ -167,9 +171,9 @@ void setup(int argc, char** argv) noexcept {
 }
 
 Nlist* lookup(token* tp, int install) noexcept {
-    unsigned int h;
-    Nlist*       np;
-    uchar *      cp, *cpe;
+    unsigned int   h;
+    Nlist*         np;
+    unsigned char *cp, *cpe;
 
     h = 0;
     for (cp = tp->t, cpe = cp + tp->len; cp < cpe;) h += *cp++;
@@ -180,7 +184,7 @@ Nlist* lookup(token* tp, int install) noexcept {
         np = np->next;
     }
     if (install) {
-        np       = new (Nlist);
+        np       = _new_obj<Nlist>();
         np->val  = 0;
         np->vp   = NULL;
         np->ap   = NULL;

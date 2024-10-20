@@ -1,76 +1,73 @@
 #include <prep.hpp>
 
 static char  wbuf[2 * OUTPUT_BUFFER_SIZE];
-static char* wbp    = wbuf;
+static char* wbp                         = wbuf;
 
-/*
- * 1 for tokens that don't need whitespace when they get inserted
- * by macro expansion
- */
-static char wstab[] = {
-    0, /* END */
-    0, /* UNCLASS */
-    0, /* NAME */
-    0, /* NUMBER */
-    0, /* STRING */
-    0, /* CCON */
-    1, /* NL */
-    0, /* WS */
-    0, /* DSHARP */
-    0, /* EQ */
-    0, /* NEQ */
-    0, /* LEQ */
-    0, /* GEQ */
-    0, /* LSH */
-    0, /* RSH */
-    0, /* LAND */
-    0, /* LOR */
-    0, /* PPLUS */
-    0, /* MMINUS */
-    0, /* ARROW */
-    1, /* SBRA */
-    1, /* SKET */
-    1, /* LP */
-    1, /* RP */
-    0, /* DOT */
-    0, /* AND */
-    0, /* STAR */
-    0, /* PLUS */
-    0, /* MINUS */
-    0, /* TILDE */
-    0, /* NOT */
-    0, /* SLASH */
-    0, /* PCT */
-    0, /* LT */
-    0, /* GT */
-    0, /* CIRC */
-    0, /* OR */
-    0, /* QUEST */
-    0, /* COLON */
-    0, /* ASGN */
-    1, /* COMMA */
-    0, /* SHARP */
-    1, /* SEMIC */
-    1, /* CBRA */
-    1, /* CKET */
-    0, /* ASPLUS */
-    0, /* ASMINUS */
-    0, /* ASSTAR */
-    0, /* ASSLASH */
-    0, /* ASPCT */
-    0, /* ASCIRC */
-    0, /* ASLSH */
-    0, /* ASRSH */
-    0, /* ASOR */
-    0, /* ASAND */
-    0, /* ELLIPS */
-    0, /* DSHARP1 */
-    0, /* NAME1 */
-    0, /* DEFINED */
-    0, /* UMINUS */
+// true for tokens that don't need whitespace when they get inserted by macro expansion
+static constexpr bool whitespace_table[] = {
+    false, // END */
+    false, // UNCLASS */
+    false, // NAME */
+    false, // NUMBER */
+    false, // STRING */
+    false, // CCON */
+    true,  // NL */
+    false, // WS */
+    false, // DSHARP */
+    false, // EQ */
+    false, // NEQ */
+    false, // LEQ */
+    false, // GEQ */
+    false, // LSH */
+    false, // RSH */
+    false, // LAND */
+    false, // LOR */
+    false, // PPLUS */
+    false, // MMINUS */
+    false, // ARROW */
+    true,  // SBRA */
+    true,  // SKET */
+    true,  // LP */
+    true,  // RP */
+    false, // DOT */
+    false, // AND */
+    false, // STAR */
+    false, // PLUS */
+    false, // MINUS */
+    false, // TILDE */
+    false, // NOT */
+    false, // SLASH */
+    false, // PCT */
+    false, // LT */
+    false, // GT */
+    false, // CIRC */
+    false, // OR */
+    false, // QUEST */
+    false, // COLON */
+    false, // ASGN */
+    true,  // COMMA */
+    false, // SHARP */
+    true,  // SEMIC */
+    true,  // CBRA */
+    true,  // CKET */
+    false, // ASPLUS */
+    false, // ASMINUS */
+    false, // ASSTAR */
+    false, // ASSLASH */
+    false, // ASPCT */
+    false, // ASCIRC */
+    false, // ASLSH */
+    false, // ASRSH */
+    false, // ASOR */
+    false, // ASAND */
+    false, // ELLIPS */
+    false, // DSHARP1 */
+    false, // NAME1 */
+    false, // DEFINED */
+    false, // UMINUS */
 };
 
-void maketokenrow(int size, token_row* trp) {
+void maketokenrow(int size, token_row* trp) noexcept {
     trp->max = size;
     if (size > 0)
         trp->bp = (token*) _checked_malloc(size * sizeof(token));
@@ -108,39 +105,39 @@ int comparetokens(token_row* tr1, token_row* tr2) {
 }
 
 /*
- * replace ntok tokens starting at dtr->tp with the contents of str.
+ * replace ntokens tokens starting at dest->tp with the contents of src.
  * tp ends up pointing just beyond the replacement.
  * Canonical whitespace is assured on each side.
  */
-void insertrow(token_row* dtr, int ntok, token_row* str) {
-    int nrtok  = rowlen(str);
+void insertrow(token_row* dest, size_t ntokens, token_row* src) {
+    int nrtok  = rowlen(src);
 
-    dtr->tp   += ntok;
-    adjustrow(dtr, nrtok - ntok);
-    dtr->tp -= ntok;
-    movetokenrow(dtr, str);
-    makespace(dtr);
-    dtr->tp += nrtok;
-    makespace(dtr);
+    dest->tp  += ntokens;
+    adjustrow(dest, nrtok - ntokens);
+    dest->tp -= ntokens;
+    movetokenrow(dest, src);
+    makespace(dest);
+    dest->tp += nrtok;
+    makespace(dest);
 }
 
 /*
  * make sure there is WS before trp->tp, if tokens might merge in the output
  */
 void makespace(token_row* trp) {
-    uchar* tt;
-    token* tp = trp->tp;
+    unsigned char* tt;
+    token*         tp = trp->tp;
 
     if (tp >= trp->lp) return;
     if (tp->wslen) {
-        if (tp->flag & XPWS && (wstab[tp->type] || trp->tp > trp->bp && wstab[(tp - 1)->type])) {
+        if (tp->flag & XPWS && (whitespace_table[tp->type] || trp->tp > trp->bp && whitespace_table[(tp - 1)->type])) {
             tp->wslen = 0;
             return;
         }
         tp->t[-1] = ' ';
         return;
     }
-    if (wstab[tp->type] || trp->tp > trp->bp && wstab[(tp - 1)->type]) return;
+    if (whitespace_table[tp->type] || trp->tp > trp->bp && whitespace_table[(tp - 1)->type]) return;
     tt         = newstring(tp->t, tp->len, 1);
     *tt++      = ' ';
     tp->t      = tt;
@@ -156,7 +153,7 @@ void makespace(token_row* trp) {
 void movetokenrow(token_row* dtr, token_row* str) {
     int nby;
 
-    /* nby = sizeof(token) * (str->lp - str->bp); */
+    /* nby = sizeof(token) * (src->lp - src->bp); */
     nby = (char*) str->lp - (char*) str->bp;
     memmove(dtr->tp, str->bp, nby);
 }
@@ -198,9 +195,9 @@ token_row* copytokenrow(token_row* dtr, token_row* str) {
  * has WS available.
  */
 token_row* normtokenrow(token_row* trp) {
-    token*    tp;
-    token_row* ntrp = new (token_row);
-    int       len;
+    token*     tp;
+    token_row* ntrp = _new_obj<token_row>();
+    int        len;
 
     len = trp->lp - trp->tp;
     if (len <= 0) len = 1;
@@ -248,9 +245,9 @@ void peektokens(token_row* trp, char* str) {
 }
 
 void puttokens(token_row* trp) {
-    token* tp;
-    int    len;
-    uchar* p;
+    token*         tp;
+    int            len;
+    unsigned char* p;
 
     if (verbose) peektokens(trp, "");
     tp = trp->bp;
@@ -288,10 +285,8 @@ void flushout(void) {
     }
 }
 
-/*
- * turn a row into just a newline
- */
-void setempty(token_row* trp) {
+// turn a row into just a newline
+void setempty(_Inout_ token_row* const trp) noexcept {
     trp->tp  = trp->bp;
     trp->lp  = trp->bp + 1;
     *trp->bp = nltoken;
@@ -307,12 +302,11 @@ char* outnum(char* p, int n) {
 }
 
 /*
- * allocate and initialize a new string from s, of length l, at offset o
+ * allocate and initialize a new string from string, of length length, at offset offset
  * Null terminated.
  */
-uchar* newstring(uchar* s, int l, int o) {
-    uchar* ns = (uchar*) _checked_malloc(l + o + 1);
-
-    ns[l + o] = '\0';
-    return (uchar*) strncpy((char*) ns + o, (char*) s, l) - o;
+char* newstring(_In_ const char* const string, _In_ const size_t length, _In_ const size_t offset) noexcept {
+    char* str            = reinterpret_cast<char*>(::_checked_malloc(length + offset + 1));
+    str[length + offset] = '\0';
+    return ::strncpy((char*) str + offset, (char*) string, length) - offset;
 }

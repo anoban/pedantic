@@ -26,6 +26,7 @@ int wmain(_In_opt_ int argc, _In_opt_count_(argc) wchar_t* argv[]) {
     curtime = ctime(&now);
     maketokenrow(3, &tr);
     expandlex();
+
     setup(argc, argv);
     fixlex();
     iniths();
@@ -87,13 +88,13 @@ void control(token_row* tknrw) noexcept {
         return; /* else empty line */
     }
 
-    if ((np = lookup(tknptr, 0)) == NULL || (np->flag & ISKW) == 0 && !skipping) {
+    if ((np = lookup(tknptr, 0)) == NULL || (np->flag & IS_KEYWORD) == 0 && !skipping) {
         error(WARNING, "Unknown preprocessor control %t", tknptr);
         return;
     }
 
     if (skipping) {
-        if ((np->flag & ISKW) == 0) return;
+        if ((np->flag & IS_KEYWORD) == 0) return;
         switch (np->val) {
             case KENDIF :
                 if (--ifdepth < skipping) skipping = 0;
@@ -126,11 +127,11 @@ void control(token_row* tknrw) noexcept {
                 break;
             }
             if ((np = lookup(tknptr, 0))) {
-                if (np->flag & ISUNCHANGE) {
+                if (np->flag & IS_UNCHANGEABLE) {
                     error(ERROR, "#defined token %t can't be undefined", tknptr);
                     return;
                 }
-                np->flag &= ~ISDEFINED;
+                np->flag &= ~IS_DEFINED_VALUE;
             }
             break;
 

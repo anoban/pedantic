@@ -9,6 +9,8 @@ static constexpr size_t MAX_MACRO_ARGS { 128 };     // max number arguments to a
 static constexpr size_t MAX_INCLUDE_DIRS { 64 };    // max number of include directories (-I)
 static constexpr size_t MAX_NESTED_IF_DEPTH { 32 }; // maximum allowed depth for nesting #if preprocessor directives
 
+static constexpr int _UCRT_ALLOC_ERROR { 0xEE }; // an error code to indicate that a UCRT memory allocation routine failed
+
 #ifndef EOF // <cstdio>
     #define EOF (-1)
 #endif
@@ -17,7 +19,8 @@ static constexpr size_t MAX_NESTED_IF_DEPTH { 32 }; // maximum allowed depth for
     #define NULL 0
 #endif
 
-enum class token_type : unsigned char {
+// token kinds recognized as valid inside a macro definition
+enum class token_type : unsigned {
     END,
     UNCLASS,
     NAME,
@@ -80,7 +83,8 @@ enum class token_type : unsigned char {
     UMINUS
 };
 
-enum class keyword_type : unsigned char {
+// recognized preprocessor keywords/directives/macros
+enum class keyword_type : unsigned {
     KIF,      // #if
     KIFDEF,   // #ifdef
     KIFNDEF,  // #ifndef
@@ -91,8 +95,8 @@ enum class keyword_type : unsigned char {
     KDEFINE,  // #define
     KUNDEF,   // #undef
     KLINE,
-    KERROR,
-    KWARNING,
+    KERROR,   // #error
+    KWARNING, // #warning - a directive provided as an extension to ISO standard C
     KPRAGMA,  // #pragma
     KDEFINED, // #defined
     KLINENO,  // __LINE__
@@ -103,11 +107,16 @@ enum class keyword_type : unsigned char {
     KEVAL
 };
 
-static constexpr size_t ISDEFINED { 01 };  // has #defined value
-static constexpr size_t ISKW { 02 };       // is a preprocessor keyword
-static constexpr size_t ISUNCHANGE { 04 }; // can't be #defined in preprocessor
-static constexpr size_t ISMAC { 010 };     // builtin macro, e.g. __LINE__
-static constexpr size_t ISVARMAC { 020 };  // variadic macro
+// macro keyword properties
+enum class keyword_props : unsigned {
+    IS_DEFINED_VALUE        = 0x01, // a macro with a #defined value
+    IS_KEYWORD              = 0x02, // a preprocessor keyword
+    IS_UNCHANGEABLE         = 0x04, // a macro that can't be #defined (redefined) by users, e.g builtin macros
+    IS_BUILTIN              = 0x08, // a builtin macro, e.g. __LINE__
+    IS_VARIADIC_MACRO       = 0x10, // variadic macro
+    IS_BUILTIN_UNCHANGEABLE = 0x0C, // a builtin unchangeable macro
+    IS_DEFINED_UNCHANGEABLE = 0x05  // a builtin unchangeable macro
+};
 
 static constexpr size_t EOB { 0xFE };  // sentinel for end of input buffer
 static constexpr size_t EOFC { 0xFD }; // sentinel for end of input file
@@ -115,7 +124,7 @@ static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure toke
 
 enum { NOT_IN_MACRO, IN_MACRO };
 
-struct token {
+struct token final {
         token_type     type;
         unsigned char  flag;
         unsigned short hideset;
@@ -124,14 +133,14 @@ struct token {
         unsigned char* t;
 };
 
-struct token_row {
-        token* tp;  // current one to scan
-        token* bp;  // base (allocated value)
-        token* lp;  // last + 1 token used
-        int    max; // number allocated
+struct token_row final {
+        token*    tp;  // current one to scan
+        token*    bp;  // base (allocated value)
+        token*    lp;  // last + 1 token used
+        long long max; // number allocated
 };
 
-struct source {
+struct source final {
         char*          filename; // name of file of the source
         int            line;     // current line number
         int            lineinc;  // adjustment for \\n lines
@@ -160,21 +169,23 @@ struct include_list {
         char* file;
 };
 
-#define new(t)          (t*) _checked_malloc(sizeof(t))
+template<typename _Ty> static inline _Ty* _new_obj() noexcept { return _checked_malloc(sizeof(_Ty)); }
+
 #define quicklook(a, b) (namebit[(a) & 077] & (1 << ((b) & 037)))
 #define quickset(a, b)  namebit[(a) & 077] |= (1 << ((b) & 037))
 
-extern unsigned long namebit[077 + 1];
+extern unsigned long namebit[077 + 1]; //64
 
 enum class error_kind : unsigned char { WARNING, ERROR, FATAL };
+
+#pragma region __FORWARD_DECLARATIONS__
 
 void expandlex(void);
 void fixlex(void);
 void setup(int, char**);
 
 #define gettokens cpp_gettokens
-int gettokens(token_row*, int);
-
+int     gettokens(token_row*, int);
 int     comparetokens(token_row*, token_row*);
 source* setsource(char*, int, char*);
 void    unsetsource(void);
@@ -222,6 +233,8 @@ void           iniths(void);
 void           setobjname(char*);
 void           clearwstab(void);
 
+#pragma endregion
+
 #define rowlen(tokrow) ((tokrow)->lp - (tokrow)->bp)
 
 extern char*        outp;
@@ -244,17 +257,19 @@ static inline void* __cdecl _checked_realloc(_In_ void* const ptr, _In_ const si
     void* _ptr = ::realloc(ptr, size);
     if (!_ptr) {
         ::fputws(L"memory reallocation failed inside " __FUNCTIONW__ "\n", stderr);
-        std::exit(EXIT_FAILURE);
+        std::exit(_UCRT_ALLOC_ERROR);
     }
     return _ptr;
 }
 
+// returns a zeroed out buffer of size bytes
 static inline void* __cdecl _checked_malloc(_In_ const size_t size) noexcept {
     void* ptr = ::malloc(size);
     if (!ptr) {
         ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
-        std::exit(EXIT_FAILURE);
+        std::exit(_UCRT_ALLOC_ERROR);
     }
+    ::memset(ptr, 0U, size);
     return ptr;
 }
 

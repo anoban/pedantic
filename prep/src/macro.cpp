@@ -6,10 +6,10 @@
  * do a macro definition.  tp points to the name being defined in the line
  */
 void dodefine(token_row* trp) {
-    token*    tp;
-    Nlist*    np;
+    token*     tp;
+    Nlist*     np;
     token_row *def, *args;
-    int       dots;
+    int        dots;
 
     dots = 0;
     tp   = trp->tp + 1;
@@ -18,7 +18,7 @@ void dodefine(token_row* trp) {
         return;
     }
     np = lookup(tp, 1);
-    if (np->flag & ISUNCHANGE) {
+    if (np->flag & IS_UNCHANGEABLE) {
         error(ERROR, "#defined token %t can't be redefined", tp);
         return;
     }
@@ -29,7 +29,7 @@ void dodefine(token_row* trp) {
         /* macro with args */
         int narg  = 0;
         tp       += 1;
-        args      = new (token_row);
+        args      = _new_obj<token_row>();
         maketokenrow(2, args);
         if (tp->type != RP) {
             int err = 0;
@@ -66,7 +66,7 @@ void dodefine(token_row* trp) {
     trp->tp = tp;
     if (((trp->lp) - 1)->type == NL) trp->lp -= 1;
     def = normtokenrow(trp);
-    if (np->flag & ISDEFINED) {
+    if (np->flag & IS_DEFINED_VALUE) {
         if (comparetokens(def, np->vp) || (np->ap == NULL) != (args == NULL) || np->ap && comparetokens(args, np->ap))
             error(ERROR, "Macro redefinition of %t", trp->bp + 2);
     }
@@ -78,8 +78,8 @@ void dodefine(token_row* trp) {
     }
     np->ap    = args;
     np->vp    = def;
-    np->flag |= ISDEFINED;
-    if (dots) np->flag |= ISVARMAC;
+    np->flag |= IS_DEFINED_VALUE;
+    if (dots) np->flag |= IS_VARIADIC_MACRO;
 }
 
 /*
@@ -93,16 +93,16 @@ void doadefine(token_row* trp, int type) {
     };
     static token_row onetr = { onetoken, onetoken, onetoken + 1, 1 };
 
-    trp->tp               = trp->bp;
+    trp->tp                = trp->bp;
     if (type == 'U') {
         if (trp->lp - trp->tp != 2 || trp->tp->type != NAME) goto syntax;
         if ((np = lookup(trp->tp, 0)) == NULL) return;
-        np->flag &= ~ISDEFINED;
+        np->flag &= ~IS_DEFINED_VALUE;
         return;
     }
     if (trp->tp >= trp->lp || trp->tp->type != NAME) goto syntax;
     np        = lookup(trp->tp, 1);
-    np->flag |= ISDEFINED;
+    np->flag |= IS_DEFINED_VALUE;
     trp->tp  += 1;
     if (trp->tp >= trp->lp || trp->tp->type == END) {
         np->vp = &onetr;
@@ -128,7 +128,7 @@ void expandrow(token_row* trp, char* flag, int inmacro) {
     if (flag) setsource(flag, -1, "");
     for (tp = trp->tp; tp < trp->lp;) {
         if (tp->type != NAME || quicklook(tp->t[0], tp->len > 1 ? tp->t[1] : 0) == 0 || (np = lookup(tp, 0)) == NULL ||
-            (np->flag & (ISDEFINED | ISMAC)) == 0 || tp->hideset && checkhideset(tp->hideset, np)) {
+            (np->flag & (IS_DEFINED_VALUE | IS_BUILTIN)) == 0 || tp->hideset && checkhideset(tp->hideset, np)) {
             tp++;
             continue;
         }
@@ -144,7 +144,7 @@ void expandrow(token_row* trp, char* flag, int inmacro) {
             tp++;
             continue;
         }
-        if (np->flag & ISMAC)
+        if (np->flag & IS_BUILTIN)
             builtin(trp, np->val);
         else
             expand(trp, np, inmacro);
@@ -160,16 +160,16 @@ void expandrow(token_row* trp, char* flag, int inmacro) {
  */
 void expand(token_row* trp, Nlist* np, int inmacro) {
     token_row  ntr;
-    int       ntokc, narg, i;
-    token*    tp;
+    int        ntokc, narg, i;
+    token*     tp;
     token_row* atr[MAX_MACRO_ARGS + 1];
-    int       hs;
+    int        hs;
 
     copytokenrow(&ntr, np->vp); /* copy macro value */
     if (np->ap == NULL)         /* parameterless */
         ntokc = 1;
     else {
-        ntokc = gatherargs(trp, atr, (np->flag & ISVARMAC) ? rowlen(np->ap) : 0, &narg);
+        ntokc = gatherargs(trp, atr, (np->flag & IS_VARIADIC_MACRO) ? rowlen(np->ap) : 0, &narg);
         if (narg < 0) { /* not actually a call (no '(') */
                         /* error(WARNING, "%d %r\n", narg, trp); */
             /* gatherargs has already pushed trp->tr to the next token */
@@ -210,12 +210,12 @@ void expand(token_row* trp, Nlist* np, int inmacro) {
  * trp->tp is not changed relative to the tokenrow.
  */
 int gatherargs(token_row* trp, token_row** atr, int dots, int* narg) {
-    int      parens = 1;
-    int      ntok   = 0;
-    token *  bp, *lp;
+    int       parens = 1;
+    int       ntok   = 0;
+    token *   bp, *lp;
     token_row ttr;
-    int      ntokp;
-    int      needspace;
+    int       ntokp;
+    int       needspace;
 
     *narg = -1; /* means that there is no macro call */
     /* look for the ( */
@@ -295,8 +295,8 @@ int gatherargs(token_row* trp, token_row** atr, int dots, int* narg) {
  */
 void substargs(Nlist* np, token_row* rtr, token_row** atr) {
     token_row tatr;
-    token*   tp;
-    int      ntok, argno;
+    token*    tp;
+    int       ntok, argno;
 
     for (rtr->tp = rtr->bp; rtr->tp < rtr->lp;) {
         if (rtr->tp->type == SHARP) { /* string operator */
@@ -331,9 +331,9 @@ void substargs(Nlist* np, token_row* rtr, token_row** atr) {
  * Evaluate the ## operators in a tokenrow
  */
 void doconcat(token_row* trp) {
-    token *  ltp, *ntp;
+    token *   ltp, *ntp;
     token_row ntr;
-    int      len;
+    int       len;
 
     for (trp->tp = trp->bp; trp->tp < trp->lp; trp->tp++) {
         if (trp->tp->type == DSHARP1)
@@ -374,7 +374,7 @@ int lookuparg(Nlist* mac, token* tp) {
     token* ap;
 
     if (tp->type != NAME || mac->ap == NULL) return -1;
-    if ((mac->flag & ISVARMAC) && strcmp((char*) tp->t, "__VA_ARGS__") == 0) return rowlen(mac->ap) - 1;
+    if ((mac->flag & IS_VARIADIC_MACRO) && strcmp((char*) tp->t, "__VA_ARGS__") == 0) return rowlen(mac->ap) - 1;
     for (ap = mac->ap->bp; ap < mac->ap->lp; ap++)
         if (ap->len == tp->len && strncmp((char*) ap->t, (char*) tp->t, ap->len) == 0) return ap - mac->ap->bp;
     return -1;
@@ -385,12 +385,12 @@ int lookuparg(Nlist* mac, token* tp) {
  */
 #define STRLEN 512
 token_row* stringify(token_row* vp) {
-    static token    t  = { STRING };
+    static token     t  = { STRING };
     static token_row tr = { &t, &t, &t + 1, 1 };
-    token*          tp;
-    uchar           s[STRLEN];
-    uchar *         sp = s, *cp;
-    int             i, instring;
+    token*           tp;
+    unsigned char    s[STRLEN];
+    unsigned char *  sp = s, *cp;
+    int              i, instring;
 
     *sp++ = '"';
     for (tp = vp->bp; tp < vp->lp; tp++) {
@@ -460,7 +460,7 @@ void builtin(token_row* trp, int biname) {
         default : error(ERROR, "cpp botch: unknown internal macro"); return;
     }
     if (tp->type == STRING) *op++ = '"';
-    tp->t   = (uchar*) outp;
+    tp->t   = (unsigned char*) outp;
     tp->len = op - outp;
     outp    = op;
 }

@@ -138,13 +138,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="prep.hpp" />
-    <ClInclude Include="u.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\eval.cpp" />
     <ClCompile Include="src\hideset.cpp" />
     <ClCompile Include="src\include.cpp" />
-    <ClCompile Include="src\lex.cpp" />
+    <ClCompile Include="src\lexer.cpp" />
     <ClCompile Include="src\macro.cpp" />
     <ClCompile Include="src\nlist.cpp" />
     <ClCompile Include="src\prep.cpp" />

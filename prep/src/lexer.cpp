@@ -1,15 +1,13 @@
-#include <cstdio>
-
 #include <prep.hpp>
 
 /*
- * lexical FSM encoding
+ *   Lexical FSM (Finite State Machine) encoding
  *   when in state state, and one of the characters
  *   in ch arrives, enter nextstate.
  *   States >= S_SELF are either final, or at least require special action.
  *   In 'fsm' there is a line for each state X charset X nextstate.
- *   List chars that overwrite previous entries later (e.g. C_ALPH
- *   can be overridden by '_' by a later entry; and C_XX is the
+ *   List chars that overwrite previous entries later (e.g. ALPHABET
+ *   can be overridden by '_' by a later entry; and character_classl::xx is the
  *   the universal set, and should always be first.
  *   States above S_SELF are represented in the big table as negative values.
  *   S_SELF and S_SELFB encode the resulting token type in the upper bits.
@@ -21,7 +19,8 @@
  *      nextstate: 6 bits; ?\ marker: 1 bit; tokentype: 9 bits.
  */
 
-#define MAXSTATE      32
+static constexpr size_t FSM_MAX_STATES { 32 };
+
 #define ACT(tok, act) ((tok << 7) + act)
 #define QBSBIT        0100
 #define GETACT(st)    (st >> 7) & 0x1ff
@@ -29,14 +28,11 @@
 #define UTF2(c)       ((c) >= 0xA0 && (c) < 0xE0) /* 2-char UTF seq */
 #define UTF3(c)       ((c) >= 0xE0 && (c) < 0xF0) /* 3-char UTF seq */
 
-/* character classes */
-#define C_WS          1
-#define C_ALPH        2
-#define C_NUM         3
-#define C_EOF         4
-#define C_XX          5
+// character classes
+enum class character_class : unsigned { WHITESPACE = 0x01, ALPHABET, NUMBER, EOFILE, XX };
 
-enum state {
+// valid states for the finite state machine
+enum class fsm_state : unsigned {
     START = 0,
     NUM1,
     NUM2,
@@ -68,7 +64,7 @@ enum state {
     ASG1,
     NOT1,
     DOTS1,
-    S_SELF = MAXSTATE,
+    S_SELF = FSM_MAX_STATES,
     S_SELFB,
     S_EOF,
     S_NL,
@@ -83,27 +79,27 @@ enum state {
 };
 
 struct fsm {
-        int   state;     /* if in this state */
-        uchar ch[4];     /* and see one of these characters */
-        int   nextstate; /* enter this state if +ve */
+        fsm_state     state;     /* if in this state */
+        unsigned char ch[4];     /* and see one of these characters */
+        int           nextstate; /* enter this state if +ve */
 };
 
 /*const*/ struct fsm fsm[] = {
     /* start state */
-    START,
-    { C_XX },
+    fsm_state::START,
+    { character_class::XX },
     ACT(UNCLASS, S_SELF),
     START,
     { ' ', '\t', '\v', '\r' },
     WS1,
     START,
-    { C_NUM },
+    { character_classl::NUMBER },
     NUM1,
     START,
     { '.' },
     NUM3,
     START,
-    { C_ALPH },
+    { ALPHABET },
     ID1,
     START,
     { 'L' },
@@ -195,10 +191,10 @@ struct fsm {
 
     /* saw a digit */
     NUM1,
-    { C_XX },
+    { character_classl::xx },
     ACT(NUMBER, S_SELFB),
     NUM1,
-    { C_NUM, C_ALPH, '.' },
+    { character_classl::NUMBER, ALPHABET, '.' },
     NUM1,
     NUM1,
     { 'E', 'e' },
@@ -209,13 +205,13 @@ struct fsm {
 
     /* saw possible start of exponent, digits-e */
     NUM2,
-    { C_XX },
+    { character_classl::xx },
     ACT(NUMBER, S_SELFB),
     NUM2,
     { '+', '-' },
     NUM1,
     NUM2,
-    { C_NUM, C_ALPH },
+    { character_classl::NUMBER, ALPHABET },
     NUM1,
     NUM2,
     { '_' },
@@ -223,20 +219,20 @@ struct fsm {
 
     /* saw a '.', which could be a number or an operator */
     NUM3,
-    { C_XX },
+    { character_classl::xx },
     ACT(DOT, S_SELFB),
     NUM3,
     { '.' },
     DOTS1,
     NUM3,
-    { C_NUM },
+    { character_classl::NUMBER },
     NUM1,
 
     DOTS1,
-    { C_XX },
+    { character_classl::xx },
     ACT(UNCLASS, S_SELFB),
     DOTS1,
-    { C_NUM },
+    { character_classl::NUMBER },
     NUM1,
     DOTS1,
     { '.' },
@@ -244,18 +240,18 @@ struct fsm {
 
     /* saw a letter or _ */
     ID1,
-    { C_XX },
+    { character_classl::xx },
     ACT(NAME, S_NAME),
     ID1,
-    { C_ALPH, C_NUM },
+    { ALPHABET, character_classl::NUMBER },
     ID1,
 
     /* saw L (start of wide string?) */
     ST1,
-    { C_XX },
+    { character_classl::xx },
     ACT(NAME, S_NAME),
     ST1,
-    { C_ALPH, C_NUM },
+    { ALPHABET, character_classl::NUMBER },
     ID1,
     ST1,
     { '"' },
@@ -266,7 +262,7 @@ struct fsm {
 
     /* saw " beginning string */
     ST2,
-    { C_XX },
+    { character_classl::xx },
     ST2,
     ST2,
     { '"' },
@@ -283,7 +279,7 @@ struct fsm {
 
     /* saw \ in string */
     ST3,
-    { C_XX },
+    { character_classl::xx },
     ST2,
     ST3,
     { '\n' },
@@ -294,7 +290,7 @@ struct fsm {
 
     /* saw ' beginning character const */
     CC1,
-    { C_XX },
+    { character_classl::xx },
     CC1,
     CC1,
     { '\'' },
@@ -311,7 +307,7 @@ struct fsm {
 
     /* saw \ in ccon */
     CC2,
-    { C_XX },
+    { character_classl::xx },
     CC1,
     CC2,
     { '\n' },
@@ -322,7 +318,7 @@ struct fsm {
 
     /* saw /, perhaps start of comment */
     COM1,
-    { C_XX },
+    { character_classl::xx },
     ACT(SLASH, S_SELFB),
     COM1,
     { '=' },
@@ -336,7 +332,7 @@ struct fsm {
 
     /* saw "/*", start of comment */
     COM2,
-    { C_XX },
+    { character_classl::xx },
     COM2,
     COM2,
     { '\n' },
@@ -350,7 +346,7 @@ struct fsm {
 
     /* saw the * possibly ending a comment */
     COM3,
-    { C_XX },
+    { character_classl::xx },
     COM2,
     COM3,
     { '\n' },
@@ -367,7 +363,7 @@ struct fsm {
 
     /* // comment */
     COM4,
-    { C_XX },
+    { character_classl::xx },
     COM4,
     COM4,
     { '\n' },
@@ -378,7 +374,7 @@ struct fsm {
 
     /* saw white space, eat it up */
     WS1,
-    { C_XX },
+    { character_classl::xx },
     S_WS,
     WS1,
     { ' ', '\t', '\v', '\r' },
@@ -386,7 +382,7 @@ struct fsm {
 
     /* saw -, check --, -=, -> */
     MINUS1,
-    { C_XX },
+    { character_classl::xx },
     ACT(MINUS, S_SELFB),
     MINUS1,
     { '-' },
@@ -400,7 +396,7 @@ struct fsm {
 
     /* saw +, check ++, += */
     PLUS1,
-    { C_XX },
+    { character_classl::xx },
     ACT(PLUS, S_SELFB),
     PLUS1,
     { '+' },
@@ -411,7 +407,7 @@ struct fsm {
 
     /* saw <, check <<, <<=, <= */
     LT1,
-    { C_XX },
+    { character_classl::xx },
     ACT(LT, S_SELFB),
     LT1,
     { '<' },
@@ -420,7 +416,7 @@ struct fsm {
     { '=' },
     ACT(LEQ, S_SELF),
     LT2,
-    { C_XX },
+    { character_classl::xx },
     ACT(LSH, S_SELFB),
     LT2,
     { '=' },
@@ -428,7 +424,7 @@ struct fsm {
 
     /* saw >, check >>, >>=, >= */
     GT1,
-    { C_XX },
+    { character_classl::xx },
     ACT(GT, S_SELFB),
     GT1,
     { '>' },
@@ -437,7 +433,7 @@ struct fsm {
     { '=' },
     ACT(GEQ, S_SELF),
     GT2,
-    { C_XX },
+    { character_classl::xx },
     ACT(RSH, S_SELFB),
     GT2,
     { '=' },
@@ -445,7 +441,7 @@ struct fsm {
 
     /* = */
     ASG1,
-    { C_XX },
+    { character_classl::xx },
     ACT(ASGN, S_SELFB),
     ASG1,
     { '=' },
@@ -453,7 +449,7 @@ struct fsm {
 
     /* ! */
     NOT1,
-    { C_XX },
+    { character_classl::xx },
     ACT(NOT, S_SELFB),
     NOT1,
     { '=' },
@@ -461,7 +457,7 @@ struct fsm {
 
     /* & */
     AND1,
-    { C_XX },
+    { character_classl::xx },
     ACT(AND, S_SELFB),
     AND1,
     { '&' },
@@ -472,7 +468,7 @@ struct fsm {
 
     /* | */
     OR1,
-    { C_XX },
+    { character_classl::xx },
     ACT(OR, S_SELFB),
     OR1,
     { '|' },
@@ -483,7 +479,7 @@ struct fsm {
 
     /* # */
     SHARP1,
-    { C_XX },
+    { character_classl::xx },
     ACT(SHARP, S_SELFB),
     SHARP1,
     { '#' },
@@ -491,7 +487,7 @@ struct fsm {
 
     /* % */
     PCT1,
-    { C_XX },
+    { character_classl::xx },
     ACT(PCT, S_SELFB),
     PCT1,
     { '=' },
@@ -499,7 +495,7 @@ struct fsm {
 
     /* * */
     STAR1,
-    { C_XX },
+    { character_classl::xx },
     ACT(STAR, S_SELFB),
     STAR1,
     { '=' },
@@ -507,7 +503,7 @@ struct fsm {
 
     /* ^ */
     CIRC1,
-    { C_XX },
+    { character_classl::xx },
     ACT(CIRC, S_SELFB),
     CIRC1,
     { '=' },
@@ -518,7 +514,7 @@ struct fsm {
 
 /* first index is char, second is state */
 /* increase #states to power of 2 to encourage use of shift */
-short bigfsm[256][MAXSTATE];
+short bigfsm[256][FSM_MAX_STATES];
 
 void expandlex(void) {
     /*const*/ struct fsm* fp;
@@ -529,14 +525,14 @@ void expandlex(void) {
             nstate = fp->nextstate;
             if (nstate >= S_SELF) nstate = ~nstate;
             switch (fp->ch[i]) {
-                case C_XX : /* random characters */
+                case character_classl::xx : /* random characters */
                     for (j = 0; j < 256; j++) bigfsm[j][fp->state] = nstate;
                     continue;
-                case C_ALPH :
+                case ALPHABET :
                     for (j = 0; j <= 256; j++)
                         if ('a' <= j && j <= 'z' || 'A' <= j && j <= 'Z' || UTF2(j) || UTF3(j) || j == '_') bigfsm[j][fp->state] = nstate;
                     continue;
-                case C_NUM :
+                case character_classl::NUMBER :
                     for (j = '0'; j <= '9'; j++) bigfsm[j][fp->state] = nstate;
                     continue;
                 default : bigfsm[fp->ch[i]][fp->state] = nstate;
@@ -544,7 +540,7 @@ void expandlex(void) {
         }
     }
     /* install special cases for ? (trigraphs),  \ (splicing), runes, and EOB */
-    for (i = 0; i < MAXSTATE; i++) {
+    for (i = 0; i < FSM_MAX_STATES; i++) {
         for (j = 0; j < 0xFF; j++)
             if (j == '?' || j == '\\' || UTF2(j) || UTF3(j)) {
                 if (bigfsm[j][i] > 0) bigfsm[j][i] = ~bigfsm[j][i];
@@ -568,13 +564,13 @@ void fixlex(void) {
  * been seen in the row.
  */
 int gettokens(token_row* trp, int reset) {
-    register int    c, state, oldstate;
-    register uchar* ip;
-    register token *tp, *maxp;
-    int             runelen;
-    source*         s    = cursource;
-    int             nmac = 0;
-    extern char     outbuf[];
+    register int            c, state, oldstate;
+    register unsigned char* ip;
+    register token *        tp, *maxp;
+    int                     runelen;
+    source*                 s    = cursource;
+    int                     nmac = 0;
+    extern char             outbuf[];
 
     tp = trp->lp;
     ip = s->inp;
@@ -804,7 +800,7 @@ int fillbuf(source* s) {
  * if fd==-1 and str, then from the string.
  */
 source* setsource(char* name, int fd, char* str) {
-    source* s = new (source);
+    source* s = _new_obj<source>();
     int     len;
 
     s->line     = 1;

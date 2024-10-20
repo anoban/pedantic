@@ -5,9 +5,9 @@ include_list includelist[MAX_INCLUDE_DIRS];
 char* objname;
 
 void doinclude(token_row* trp) {
-    char         fname[256], iname[256], *p;
+    char          fname[256], iname[256], *p;
     include_list* ip;
-    int          angled, len, fd, i;
+    int           angled, len, fd, i;
 
     trp->tp += 1;
     if (trp->tp >= trp->lp) goto syntax;
@@ -66,7 +66,7 @@ void doinclude(token_row* trp) {
     }
     if (fd >= 0) {
         if (++incdepth > 20) error(FATAL, "#include too deeply nested");
-        setsource((char*) newstring((uchar*) iname, strlen(iname), 0), fd, NULL);
+        setsource((char*) newstring((unsigned char*) iname, strlen(iname), 0), fd, NULL);
         genline();
     } else {
         trp->tp = trp->bp + 2;
@@ -82,16 +82,16 @@ syntax:
  * Generate a line directive for cursource
  */
 void genline(void) {
-    static token    ta = { UNCLASS, NULL, 0, 0 };
+    static token     ta = { UNCLASS, NULL, 0, 0 };
     static token_row tr = { &ta, &ta, &ta + 1, 1 };
-    uchar*          p;
+    unsigned char*   p;
 
     if (nolineinfo) return;
 
-    ta.t = p = (uchar*) outp;
+    ta.t = p = (unsigned char*) outp;
     strcpy((char*) p, "#line ");
     p    += sizeof("#line ") - 1;
-    p     = (uchar*) outnum((char*) p, cursource->line);
+    p     = (unsigned char*) outnum((char*) p, cursource->line);
     *p++  = ' ';
     *p++  = '"';
     if (cursource->filename[0] != '/' && wd[0]) {
