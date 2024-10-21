@@ -13,102 +13,102 @@ struct value final {
 };
 
 // conversion types
-enum class conversion_type : unsigned char { NONE, RELAT, ARITH, LOGIC, SPCL, SHIFT, UNARY };
+enum class CNVRSNTYPE : char { NONE, RELAT, ARITH, LOGIC, SPCL, SHIFT, UNARY };
 
 struct priority {
-        char            pri;
-        char            arity;
-        conversion_type ctype;
+        char       pri;
+        char       arity;
+        CNVRSNTYPE ctype;
 };
 
 // operator priority, arity, and conversion type, indexed by tokentype
-static constexpr priority op_priority[] = {
-    {  0, 0,  conversion_type::NONE }, // END
-    {  0, 0,  conversion_type::NONE }, // UNCLASS
-    {  0, 0,  conversion_type::NONE }, // NAME
-    {  0, 0,  conversion_type::NONE }, // NUMBER
-    {  0, 0,  conversion_type::NONE }, // STRING
-    {  0, 0,  conversion_type::NONE }, // CCON
-    {  0, 0,  conversion_type::NONE }, // NL
-    {  0, 0,  conversion_type::NONE }, // WS
-    {  0, 0,  conversion_type::NONE }, // DSHARP
-    { 11, 2, conversion_type::RELAT }, // EQ
-    { 11, 2, conversion_type::RELAT }, // NEQ
-    { 12, 2, conversion_type::RELAT }, // LEQ
-    { 12, 2, conversion_type::RELAT }, // GEQ
-    { 13, 2, conversion_type::SHIFT }, // LSH
-    { 13, 2, conversion_type::SHIFT }, // RSH
-    {  7, 2, conversion_type::LOGIC }, // LAND
-    {  6, 2, conversion_type::LOGIC }, // LOR
-    {  0, 0,  conversion_type::NONE }, // PPLUS
-    {  0, 0,  conversion_type::NONE }, // MMINUS
-    {  0, 0,  conversion_type::NONE }, // ARROW
-    {  0, 0,  conversion_type::NONE }, // SBRA
-    {  0, 0,  conversion_type::NONE }, // SKET
-    {  3, 0,  conversion_type::NONE }, // LP
-    {  3, 0,  conversion_type::NONE }, // RP
-    {  0, 0,  conversion_type::NONE }, // DOT
-    { 10, 2, conversion_type::ARITH }, // AND
-    { 15, 2, conversion_type::ARITH }, // STAR
-    { 14, 2, conversion_type::ARITH }, // PLUS
-    { 14, 2, conversion_type::ARITH }, // MINUS
-    { 16, 1, conversion_type::UNARY }, // TILDE
-    { 16, 1, conversion_type::UNARY }, // NOT
-    { 15, 2, conversion_type::ARITH }, // SLASH
-    { 15, 2, conversion_type::ARITH }, // PCT
-    { 12, 2, conversion_type::RELAT }, // LT
-    { 12, 2, conversion_type::RELAT }, // GT
-    {  9, 2, conversion_type::ARITH }, // CIRC
-    {  8, 2, conversion_type::ARITH }, // OR
-    {  5, 2,  conversion_type::SPCL }, // QUEST
-    {  5, 2,  conversion_type::SPCL }, // COLON
-    {  0, 0,  conversion_type::NONE }, // ASGN
-    {  4, 2,  conversion_type::NONE }, // COMMA
-    {  0, 0,  conversion_type::NONE }, // SHARP
-    {  0, 0,  conversion_type::NONE }, // SEMIC
-    {  0, 0,  conversion_type::NONE }, // CBRA
-    {  0, 0,  conversion_type::NONE }, // CKET
-    {  0, 0,  conversion_type::NONE }, // ASPLUS
-    {  0, 0,  conversion_type::NONE }, // ASMINUS
-    {  0, 0,  conversion_type::NONE }, // ASSTAR
-    {  0, 0,  conversion_type::NONE }, // ASSLASH
-    {  0, 0,  conversion_type::NONE }, // ASPCT
-    {  0, 0,  conversion_type::NONE }, // ASCIRC
-    {  0, 0,  conversion_type::NONE }, // ASLSH
-    {  0, 0,  conversion_type::NONE }, // ASRSH
-    {  0, 0,  conversion_type::NONE }, // ASOR
-    {  0, 0,  conversion_type::NONE }, // ASAND
-    {  0, 0,  conversion_type::NONE }, // ELLIPS
-    {  0, 0,  conversion_type::NONE }, // DSHARP1
-    {  0, 0,  conversion_type::NONE }, // NAME1
-    { 16, 1, conversion_type::UNARY }, // DEFINED
-    { 16, 0, conversion_type::UNARY }, // UMINUS
+static constexpr priority operator_priority[] = {
+    {  0, 0,  CNVRSNTYPE::NONE }, // END
+    {  0, 0,  CNVRSNTYPE::NONE }, // UNCLASS
+    {  0, 0,  CNVRSNTYPE::NONE }, // NAME
+    {  0, 0,  CNVRSNTYPE::NONE }, // NUMBER
+    {  0, 0,  CNVRSNTYPE::NONE }, // STRING
+    {  0, 0,  CNVRSNTYPE::NONE }, // CCON
+    {  0, 0,  CNVRSNTYPE::NONE }, // NL
+    {  0, 0,  CNVRSNTYPE::NONE }, // WS
+    {  0, 0,  CNVRSNTYPE::NONE }, // DSHARP
+    { 11, 2, CNVRSNTYPE::RELAT }, // EQ
+    { 11, 2, CNVRSNTYPE::RELAT }, // NEQ
+    { 12, 2, CNVRSNTYPE::RELAT }, // LEQ
+    { 12, 2, CNVRSNTYPE::RELAT }, // GEQ
+    { 13, 2, CNVRSNTYPE::SHIFT }, // LSH
+    { 13, 2, CNVRSNTYPE::SHIFT }, // RSH
+    {  7, 2, CNVRSNTYPE::LOGIC }, // LAND
+    {  6, 2, CNVRSNTYPE::LOGIC }, // LOR
+    {  0, 0,  CNVRSNTYPE::NONE }, // PPLUS
+    {  0, 0,  CNVRSNTYPE::NONE }, // MMINUS
+    {  0, 0,  CNVRSNTYPE::NONE }, // ARROW
+    {  0, 0,  CNVRSNTYPE::NONE }, // SBRA
+    {  0, 0,  CNVRSNTYPE::NONE }, // SKET
+    {  3, 0,  CNVRSNTYPE::NONE }, // LP
+    {  3, 0,  CNVRSNTYPE::NONE }, // RP
+    {  0, 0,  CNVRSNTYPE::NONE }, // DOT
+    { 10, 2, CNVRSNTYPE::ARITH }, // AND
+    { 15, 2, CNVRSNTYPE::ARITH }, // STAR
+    { 14, 2, CNVRSNTYPE::ARITH }, // PLUS
+    { 14, 2, CNVRSNTYPE::ARITH }, // MINUS
+    { 16, 1, CNVRSNTYPE::UNARY }, // TILDE
+    { 16, 1, CNVRSNTYPE::UNARY }, // NOT
+    { 15, 2, CNVRSNTYPE::ARITH }, // SLASH
+    { 15, 2, CNVRSNTYPE::ARITH }, // PCT
+    { 12, 2, CNVRSNTYPE::RELAT }, // LT
+    { 12, 2, CNVRSNTYPE::RELAT }, // GT
+    {  9, 2, CNVRSNTYPE::ARITH }, // CIRC
+    {  8, 2, CNVRSNTYPE::ARITH }, // OR
+    {  5, 2,  CNVRSNTYPE::SPCL }, // QUEST
+    {  5, 2,  CNVRSNTYPE::SPCL }, // COLON
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASGN
+    {  4, 2,  CNVRSNTYPE::NONE }, // COMMA
+    {  0, 0,  CNVRSNTYPE::NONE }, // SHARP
+    {  0, 0,  CNVRSNTYPE::NONE }, // SEMIC
+    {  0, 0,  CNVRSNTYPE::NONE }, // CBRA
+    {  0, 0,  CNVRSNTYPE::NONE }, // CKET
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASPLUS
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASMINUS
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASSTAR
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASSLASH
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASPCT
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASCIRC
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASLSH
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASRSH
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASOR
+    {  0, 0,  CNVRSNTYPE::NONE }, // ASAND
+    {  0, 0,  CNVRSNTYPE::NONE }, // ELLIPS
+    {  0, 0,  CNVRSNTYPE::NONE }, // DSHARP1
+    {  0, 0,  CNVRSNTYPE::NONE }, // NAME1
+    { 16, 1, CNVRSNTYPE::UNARY }, // DEFINED
+    { 16, 0, CNVRSNTYPE::UNARY }, // UMINUS
 };
 
 // forward declarations
 int   evalop(struct priority);
 value tokval(token*);
 
-value      vals[NSTAK + 1], *vp;
-token_type ops[NSTAK + 1], *op;
+value   vals[NSTAK + 1], *vp;
+TKNTYPE ops[NSTAK + 1], *op;
 
 // Evaluates an #if #elif #ifdef #ifndef line.  trp->tp points to the keyword.
-long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
+long eval(_In_ token_row* trp, _In_ const KWTYPE& keyword) noexcept {
     token* tp {};
-    Nlist* np {};
+    nlist* np {};
     int    ntok {}, rand {};
 
     trp->tp++;
-    if (keyword == keyword_type::KIFDEF || keyword == keyword_type::KIFNDEF) {
-        if (trp->lp - trp->bp != 4 || trp->tp->type != token_type::NAME) {
+    if (keyword == KWTYPE::KIFDEF || keyword == KWTYPE::KIFNDEF) {
+        if (trp->lp - trp->bp != 4 || trp->tp->type != TKNTYPE::NAME) {
             error(ERROR, "Syntax error in #ifdef/#ifndef");
             return 0;
         }
         np = lookup(trp->tp, 0);
-        return (keyword == keyword_type::KIFDEF) == (np && np->flag & (IS_DEFINED_VALUE | IS_BUILTIN));
+        return (keyword == KWTYPE::KIFDEF) == (np && np->flag & (KWPROPS::DEFINED_VALUE | KWPROPS::BUILTIN));
     }
     ntok           = trp->tp - trp->bp;
-    kwdefined->val = keyword_type::KDEFINED; // activate special meaning of defined
+    kwdefined->val = KWTYPE::KDEFINED; // activate special meaning of defined
     expandrow(trp, "<if>", NOT_IN_MACRO);
     kwdefined->val = NAME;
     vp             = vals;
@@ -117,33 +117,33 @@ long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
     for (rand = 0, tp = trp->bp + ntok; tp < trp->lp; tp++) {
         if (op >= ops + NSTAK) sysfatal("cpp: can't evaluate #if: increase NSTAK");
         switch (tp->type) {
-            case token_type::WS :
-            case token_type::NL : continue;
+            case TKNTYPE::WS :
+            case TKNTYPE::NL : continue;
 
             // nilary
-            case token_type::NAME :
-            case token_type::NAME1 :
-            case token_type::NUMBER :
-            case token_type::CCON :
-            case token_type::STRING :
+            case TKNTYPE::NAME :
+            case TKNTYPE::NAME1 :
+            case TKNTYPE::NUMBER :
+            case TKNTYPE::CCON :
+            case TKNTYPE::STRING :
                 if (rand) goto syntax;
                 *vp++ = tokval(tp);
                 rand  = 1;
                 continue;
 
             // unary
-            case token_type::DEFINED :
-            case token_type::TILDE :
-            case token_type::NOT :
+            case TKNTYPE::DEFINED :
+            case TKNTYPE::TILDE :
+            case TKNTYPE::NOT :
                 if (rand) goto syntax;
                 *op++ = tp->type;
                 continue;
 
             // unary-binary
-            case token_type::PLUS :
-            case token_type::MINUS :
-            case token_type::STAR :
-            case token_type::AND :
+            case TKNTYPE::PLUS :
+            case TKNTYPE::MINUS :
+            case TKNTYPE::STAR :
+            case TKNTYPE::AND :
                 if (rand == 0) {
                     if (tp->type == MINUS) *op++ = UMINUS;
                     if (tp->type == STAR || tp->type == AND) {
@@ -173,7 +173,7 @@ long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
             case COLON :
             case COMMA :
                 if (rand == 0) goto syntax;
-                if (evalop(op_priority[tp->type]) != 0) return 0;
+                if (evalop(operator_priority[tp->type]) != 0) return 0;
                 *op++ = tp->type;
                 rand  = 0;
                 continue;
@@ -185,7 +185,7 @@ long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
 
             case RP :
                 if (!rand) goto syntax;
-                if (evalop(op_priority[RP]) != 0) return 0;
+                if (evalop(operator_priority[RP]) != 0) return 0;
                 if (op <= ops || op[-1] != LP) goto syntax;
                 op--;
                 continue;
@@ -194,7 +194,7 @@ long eval(_In_ token_row* trp, _In_ const keyword_type& keyword) noexcept {
         }
     }
     if (rand == 0) goto syntax;
-    if (evalop(op_priority[END]) != 0) return 0;
+    if (evalop(operator_priority[END]) != 0) return 0;
     if (op != &ops[1] || vp != &vals[1]) {
         error(ERROR, "Botch in #if/#elif");
         return 0;
@@ -213,15 +213,15 @@ int evalop(struct priority pri) noexcept {
 
     rv2   = 0;
     rtype = 0;
-    while (pri.pri < op_priority[op[-1]].pri) {
+    while (pri.pri < operator_priority[op[-1]].pri) {
         oper = *--op;
-        if (op_priority[oper].arity == 2) {
+        if (operator_priority[oper].arity == 2) {
             v2  = *--vp;
             rv2 = v2.val;
         }
         v1  = *--vp;
         rv1 = v1.val;
-        switch (op_priority[oper].ctype) {
+        switch (operator_priority[oper].ctype) {
             case 0 :
             default : error(WARNING, "Syntax error in #if/#endif"); return 1;
             case ARITH :
@@ -231,7 +231,7 @@ int evalop(struct priority pri) noexcept {
                 else
                     rtype = SGN;
                 if (v1.type == UND || v2.type == UND) rtype = UND;
-                if (op_priority[oper].ctype == RELAT && rtype == UNS) {
+                if (operator_priority[oper].ctype == RELAT && rtype == UNS) {
                     oper  |= UNSMARK;
                     rtype  = SGN;
                 }
@@ -341,7 +341,7 @@ int evalop(struct priority pri) noexcept {
 
 struct value tokval(token* tp) {
     struct value   v;
-    Nlist*         np;
+    nlist*         np;
     int            i, base, c, longcc;
     unsigned long  n;
     Rune           r;
@@ -353,7 +353,7 @@ struct value tokval(token* tp) {
         case NAME : v.val = 0; break;
 
         case NAME1 :
-            if ((np = lookup(tp, 0)) && np->flag & (IS_DEFINED_VALUE | IS_BUILTIN)) v.val = 1;
+            if ((np = lookup(tp, 0)) && np->flag & (DEFINED_VALUE | BUILTIN)) v.val = 1;
             break;
 
         case NUMBER :

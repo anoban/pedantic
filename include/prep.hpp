@@ -11,16 +11,13 @@ static constexpr size_t MAX_NESTED_IF_DEPTH { 32 }; // maximum allowed depth for
 
 static constexpr int _UCRT_ALLOC_ERROR { 0xEE }; // an error code to indicate that a UCRT memory allocation routine failed
 
-#ifndef EOF // <cstdio>
-    #define EOF (-1)
-#endif
-
-#ifndef NULL // <vcruntime.h>
-    #define NULL 0
+#ifdef EOF // defined by <cstdio>
+    #undef EOF
+static constexpr long long EOF { -1 }; // end of file
 #endif
 
 // token kinds recognized as valid inside a macro definition
-enum class token_type : unsigned { // NOLINT(performance-enum-size)
+enum TKNTYPE : unsigned { // NOLINT(performance-enum-size)
     END,
     UNCLASS,
     NAME,
@@ -84,16 +81,16 @@ enum class token_type : unsigned { // NOLINT(performance-enum-size)
 };
 
 // recognized preprocessor keywords/directives/macros
-enum class keyword_type : unsigned { // NOLINT(performance-enum-size)
-    KIF,                             // #if
-    KIFDEF,                          // #ifdef
-    KIFNDEF,                         // #ifndef
-    KELIF,                           // #elif
-    KELSE,                           // #else
-    KENDIF,                          // #endif
-    KINCLUDE,                        // #include
-    KDEFINE,                         // #define
-    KUNDEF,                          // #undef
+enum KWTYPE : unsigned { // NOLINT(performance-enum-size)
+    KIF,                 // #if
+    KIFDEF,              // #ifdef
+    KIFNDEF,             // #ifndef
+    KELIF,               // #elif
+    KELSE,               // #else
+    KENDIF,              // #endif
+    KINCLUDE,            // #include
+    KDEFINE,             // #define
+    KUNDEF,              // #undef
     KLINE,
     KERROR,   // #error
     KWARNING, // #warning - a directive provided as an extension to ISO standard C
@@ -108,14 +105,14 @@ enum class keyword_type : unsigned { // NOLINT(performance-enum-size)
 };
 
 // macro keyword properties
-enum class keyword_props : unsigned { // NOLINT(performance-enum-size)
-    IS_DEFINED_VALUE        = 0x01,   // a macro with a #defined value
-    IS_KEYWORD              = 0x02,   // a preprocessor keyword
-    IS_UNCHANGEABLE         = 0x04,   // a macro that can't be #defined (redefined) by users, e.g builtin macros
-    IS_BUILTIN              = 0x08,   // a builtin macro, e.g. __LINE__
-    IS_VARIADIC_MACRO       = 0x10,   // variadic macro
-    IS_BUILTIN_UNCHANGEABLE = 0x0C,   // a builtin unchangeable macro
-    IS_DEFINED_UNCHANGEABLE = 0x05    // a builtin unchangeable macro
+enum KWPROPS : unsigned {                                     // NOLINT(performance-enum-size)
+    DEFINED_VALUE                                     = 0x01, // a macro with a #defined value
+    KEYWORD                                           = 0x02, // a preprocessor keyword
+    UNCHANGEABLE                                      = 0x04, // a macro that can't be #defined (redefined) by users, e.g builtin macros
+    BUILTIN                                           = 0x08, // a builtin macro, e.g. __LINE__
+    VARIADIC_MACRO                                    = 0x10, // variadic macro
+    BUILTIN_UNCHANGEABLE /* BUILTIN + UNCHANGEABLE */ = 0x0C, // a builtin unchangeable macro
+    DEFINED_UNCHANGEABLE /* DEFINED_VALUE + UNCHANGEABLE */ = 0x05 // a builtin unchangeable macro
 };
 
 static constexpr size_t EOB { 0xFE };  // sentinel for end of input buffer
@@ -125,7 +122,7 @@ static constexpr size_t XPWS { 0x01 }; // token flag: white space to assure toke
 enum { NOT_IN_MACRO, IN_MACRO };
 
 struct token final {
-        token_type     type;
+        TKNTYPE        type;
         unsigned char  flag;
         unsigned short hideset;
         unsigned int   wslen;
@@ -137,7 +134,7 @@ struct token_row final {
         token*    tp;  // current one to scan
         token*    bp;  // base (allocated value)
         token*    lp;  // last + 1 token used
-        long long max; // number allocated
+        long long max; // number of allocated tokens in the token row
 };
 
 struct source final {
@@ -153,8 +150,8 @@ struct source final {
         source*        next;     // stack for #include
 };
 
-struct Nlist {
-        struct nlist*  next;
+struct nlist {
+        nlist*         next;
         unsigned char* name;
         int            len;
         token_row*     vp;   // value as macro
@@ -169,14 +166,14 @@ struct include_list {
         char* file;
 };
 
-template<typename _Ty> static inline _Ty* _new_obj() noexcept { return _checked_malloc(sizeof(_Ty)); }
+template<typename _Ty> [[nodiscard]] static inline _Ty* _new_obj() noexcept { return _checked_malloc(sizeof(_Ty)); }
 
 #define quicklook(a, b) (namebit[(a) & 077] & (1 << ((b) & 037)))
 #define quickset(a, b)  namebit[(a) & 077] |= (1 << ((b) & 037))
 
 extern unsigned long namebit[077 + 1]; //64
 
-enum class error_kind : unsigned char { WARNING, ERROR, FATAL };
+enum class ERRKIND : unsigned char { WARNING, ERROR, FATAL };
 
 #pragma region __FORWARD_DECLARATIONS__
 
@@ -196,16 +193,16 @@ void           flushout(void);
 int            fillbuf(source*);
 int            trigraph(source*);
 int            foldline(source*);
-Nlist*         lookup(token*, int);
+nlist*         lookup(token*, int);
 void           control(token_row*);
 void           dodefine(token_row*);
 void           doadefine(token_row*, int);
 void           doinclude(token_row*);
-void           doif(token_row*, enum keyword_type);
-void           expand(token_row*, Nlist*, int);
+void           doif(token_row*, enum KWTYPE);
+void           expand(token_row*, nlist*, int);
 void           builtin(token_row*, int);
 int            gatherargs(token_row*, token_row**, int, int*);
-void           substargs(Nlist*, token_row*, token_row**);
+void           substargs(nlist*, token_row*, token_row**);
 void           expandrow(token_row*, char*, int);
 void           maketokenrow(int, token_row*);
 token_row*     copytokenrow(token_row*, token_row*);
@@ -217,7 +214,7 @@ void           insertrow(token_row*, int, token_row*);
 void           peektokens(token_row*, char*);
 void           doconcat(token_row*);
 token_row*     stringify(token_row*);
-int            lookuparg(Nlist*, token*);
+int            lookuparg(nlist*, token*);
 long           eval(token_row*, int);
 void           genline(void);
 void           setempty(token_row*);
@@ -225,17 +222,18 @@ void           makespace(token_row*);
 char*          outnum(char*, int);
 int            digit(int);
 unsigned char* newstring(unsigned char*, int, int);
-int            checkhideset(int, Nlist*);
-void           prhideset(int);
-int            newhideset(int, Nlist*);
+int            check_hideset(int, nlist*);
+void           print_hideset(int);
+int            new_hideset(int, nlist*);
 int            unionhideset(int, int);
-void           iniths(void);
+void           init_hideset(void);
 void           setobjname(char*);
 void           clearwstab(void);
 
 #pragma endregion
 
-#define rowlen(tokrow) ((tokrow)->lp - (tokrow)->bp)
+// #define rowlen(tokrow) ((tokrow)->lp - (tokrow)->bp)
+[[nodiscard]] static inline ptrdiff_t tokenrow_len(_In_ const token_row* const tknrow) noexcept { return tknrow->lp - tknrow->bp; }
 
 extern char*        outp;
 extern token        nltoken;
@@ -249,11 +247,11 @@ extern int          nolineinfo;
 extern int          skipping;
 extern int          verbose;
 extern int          Cplusplus;
-extern Nlist*       kwdefined;
+extern nlist*       kwdefined;
 extern include_list includelist[MAX_INCLUDE_DIRS];
 extern char         wd[];
 
-static inline void* __cdecl _checked_realloc(_In_ void* const ptr, _In_ const size_t size) noexcept {
+[[nodiscard]] static inline void* __cdecl _checked_realloc(_In_ void* const ptr, _In_ const size_t size) noexcept {
     void* _ptr = ::realloc(ptr, size);
     if (!_ptr) {
         ::fputws(L"memory reallocation failed inside " __FUNCTIONW__ "\n", stderr);
@@ -263,66 +261,12 @@ static inline void* __cdecl _checked_realloc(_In_ void* const ptr, _In_ const si
 }
 
 // returns a zeroed out buffer of size bytes
-static inline void* __cdecl _checked_malloc(_In_ const size_t size) noexcept {
-    void* ptr = ::malloc(size);
+template<typename _Ty> [[nodiscard]] static inline _Ty* __cdecl _checked_malloc(_In_ const size_t count) noexcept {
+    _Ty* ptr = reinterpret_cast<_Ty*>(::malloc(sizeof(_Ty) * count));
     if (!ptr) {
         ::fputws(L"memory allocation failed inside " __FUNCTIONW__ "\n", stderr);
         std::exit(_UCRT_ALLOC_ERROR);
     }
-    ::memset(ptr, 0U, size);
+    ::memset(ptr, 0U, sizeof(_Ty) * count); // do we really need this??
     return ptr;
-}
-
-static inline void error(_In_ const error_kind& type, const char* string, ...) noexcept {
-    va_list    ap;
-    char *     cp, *ep;
-    token*     tp;
-    token_row* trp;
-    source*    s;
-    int        i;
-    void*      p;
-
-    fprintf(stderr, "prep: ");
-    for (s = cursource; s; s = s->next)
-        if (*s->filename) fprintf(stderr, "%s:%d ", s->filename, s->line);
-
-    va_start(ap, string);
-    for (ep = string; *ep; ep++) {
-        if (*ep == '%') {
-            switch (*++ep) {
-                case 's' :
-                    cp = va_arg(ap, char*);
-                    fprintf(stderr, "%s", cp);
-                    break;
-                case 'd' :
-                    i = va_arg(ap, int);
-                    fprintf(stderr, "%d", i);
-                    break;
-                case 'p' :
-                    p = va_arg(ap, void*);
-                    fprintf(stderr, "%p", p);
-                    break;
-                case 't' :
-                    tp = va_arg(ap, token*);
-                    fprintf(stderr, "%.*s", tp->len, tp->t);
-                    break;
-
-                case 'r' :
-                    trp = va_arg(ap, token_row*);
-                    for (tp = trp->tp; tp < trp->lp && tp->type != NL; tp++) {
-                        if (tp > trp->tp && tp->wslen) fputc(' ', stderr);
-                        fprintf(stderr, "%.*s", tp->len, tp->t);
-                    }
-                    break;
-
-                default : fputc(*ep, stderr); break;
-            }
-        } else
-            fputc(*ep, stderr);
-    }
-    va_end(ap);
-    fputc('\n', stderr);
-    if (type == FATAL) exits("error");
-    if (type != WARNING) nerrs = 1;
-    fflush(stderr);
 }

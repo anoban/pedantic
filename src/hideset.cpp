@@ -2,56 +2,56 @@
 
 #include <prep.hpp>
 
-/*
- * A hideset is a null-terminated array of Nlist pointers.
- * They are referred to by indices in the hidesets array.
- * Hideset 0 is empty.
- */
+// a hideset is a null-terminated array of nlist pointers.
+// they are referred to by indexing into the hidesets array, hideset 0 is empty.
 
-#define HSSIZ 32
-typedef Nlist** Hideset;
-Hideset*        hidesets;
-int             nhidesets   = 0;
-int             maxhidesets = 3;
-int             inserths(Hideset, Hideset, Nlist*);
+static constexpr size_t HIDESET_SIZE { 0x20 }; // 32
 
-/*
- * Test for membership in a hideset
- */
-int checkhideset(int hs, Nlist* np) {
+using Hideset = nlist**; // typedef nlist** Hideset;
+
+Hideset* hidesets;
+
+long long nhidesets   = 0;
+long long maxhidesets = 3;
+
+int insert_hideset(Hideset, Hideset, nlist*);
+
+// test for membership in a hideset
+bool check_hideset(int hs, nlist* np) noexcept {
     Hideset hsp;
 
-    if (hs >= nhidesets) abort();
+    if (hs >= nhidesets) {
+        // issue a diagnostic
+        std::abort();
+    }
     for (hsp = hidesets[hs]; *hsp; hsp++)
-        if (*hsp == np) return 1;
-    return 0;
+        if (*hsp == np) return true;
+    return false;
 }
 
-/*
- * Return the (possibly new) hideset obtained by adding np to hs.
- */
-int newhideset(int hs, Nlist* np) {
+// Return the (possibly new) hideset obtained by adding np to hs.
+int new_hideset(int hs, nlist* np) noexcept {
     int     i, len;
-    Nlist*  nhs[HSSIZ + 3];
+    nlist*  nhs[HIDESET_SIZE + 3];
     Hideset hs1, hs2;
 
-    len = inserths(nhs, hidesets[hs], np);
+    len = insert_hideset(nhs, hidesets[hs], np);
     for (i = 0; i < nhidesets; i++) {
         for (hs1 = nhs, hs2 = hidesets[i]; *hs1 == *hs2; hs1++, hs2++)
-            if (*hs1 == NULL) return i;
+            if (*hs1 == nullptr) return i;
     }
-    if (len >= HSSIZ) return hs;
+    if (len >= HIDESET_SIZE) return hs;
     if (nhidesets >= maxhidesets) {
         maxhidesets = 3 * maxhidesets / 2 + 1;
-        hidesets    = (Hideset*) realloc(hidesets, (sizeof(Hideset*)) * maxhidesets);
+        hidesets    = (Hideset*) _checked_realloc(hidesets, (sizeof(Hideset*)) * maxhidesets);
     }
-    hs1 = (Hideset) _checked_malloc(len * sizeof(Hideset));
+    hs1 = (Hideset) _checked_malloc<Hideset>(len); //(len * sizeof(Hideset));
     memmove(hs1, nhs, len * sizeof(Hideset));
     hidesets[nhidesets] = hs1;
     return nhidesets++;
 }
 
-int inserths(Hideset dhs, Hideset shs, Nlist* np) {
+int insert_hideset(Hideset dhs, Hideset shs, nlist* np) {
     Hideset odhs = dhs;
 
     while (*shs && *shs < np) *dhs++ = *shs++;
@@ -60,24 +60,22 @@ int inserths(Hideset dhs, Hideset shs, Nlist* np) {
     return dhs - odhs;
 }
 
-/*
- * Hideset union
- */
-int unionhideset(int hs1, int hs2) {
+// Hideset union
+int unionhideset(int hs1, int hs2) noexcept {
     Hideset hp;
 
-    for (hp = hidesets[hs2]; *hp; hp++) hs1 = newhideset(hs1, *hp);
+    for (hp = hidesets[hs2]; *hp; hp++) hs1 = new_hideset(hs1, *hp);
     return hs1;
 }
 
-void iniths(void) {
-    hidesets     = (Hideset*) _checked_malloc(maxhidesets * sizeof(Hideset*));
-    hidesets[0]  = (Hideset) _checked_malloc(sizeof(Hideset));
-    *hidesets[0] = NULL;
+void init_hideset() noexcept {
+    hidesets     = (Hideset*) _checked_malloc<Hideset*>(maxhidesets); // (maxhidesets * sizeof(Hideset*));
+    hidesets[0]  = (Hideset) _checked_malloc<Hideset>(1);             // (sizeof(Hideset));
+    *hidesets[0] = nullptr;
     nhidesets++;
 }
 
-void prhideset(int hs) {
+void print_hideset(int hs) noexcept {
     Hideset np;
 
     for (np = hidesets[hs]; *np; np++) {

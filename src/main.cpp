@@ -9,7 +9,7 @@ char    __outbuffer[OUTBUFF_SIZE];
 char*   outp { __outbuffer };
 source* cursource {};
 int     nerrs {};
-token   nltoken { token_type::NL, 0, 0, 0, 1, "\n" };
+token   nltoken { TKNTYPE::NL, 0, 0, 0, 1, "\n" };
 char    current_time[TIMESTR_SIZE] {}; // a buffer to store the string representation of current time
 int     incdepth {};
 int     ifdepth {};
@@ -29,7 +29,7 @@ int wmain(_In_opt_ int argc, _In_opt_count_(argc) wchar_t* argv[]) {
 
     setup(argc, argv);
     fixlex();
-    iniths();
+    init_hideset();
     genline();
     process(&tknrow);
     flushout();
@@ -50,7 +50,7 @@ void process(_In_ token_row* const tknrw) noexcept {
             tknrw->tp              = tknrw->bp;
         }
 
-        if (tknrw->tp->type == token_type::END) {
+        if (tknrw->tp->type == TKNTYPE::END) {
             if (--incdepth >= 0) {
                 if (cursource->ifdepth) error(ERROR, "Unterminated conditional in #include");
                 unsetsource();
@@ -67,7 +67,7 @@ void process(_In_ token_row* const tknrw) noexcept {
             tknrw->tp += 1;
             control(tknrw);
         } else if (!skipping && anymacros)
-            expandrow(tknrw, NULL, NOT_IN_MACRO);
+            expandrow(tknrw, nullptr, NOT_IN_MACRO);
 
         if (skipping) setempty(tknrw);
         puttokens(tknrw);
@@ -78,7 +78,7 @@ void process(_In_ token_row* const tknrw) noexcept {
 }
 
 void control(token_row* tknrw) noexcept {
-    Nlist* np {};
+    nlist* np {};
     token* tknptr {};
 
     tknptr = tknrw->tp;
@@ -88,13 +88,13 @@ void control(token_row* tknrw) noexcept {
         return; /* else empty line */
     }
 
-    if ((np = lookup(tknptr, 0)) == NULL || (np->flag & IS_KEYWORD) == 0 && !skipping) {
+    if ((np = lookup(tknptr, 0)) == nullptr || (np->flag & KEYWORD) == 0 && !skipping) {
         error(WARNING, "Unknown preprocessor control %t", tknptr);
         return;
     }
 
     if (skipping) {
-        if ((np->flag & IS_KEYWORD) == 0) return;
+        if ((np->flag & KEYWORD) == 0) return;
         switch (np->val) {
             case KENDIF :
                 if (--ifdepth < skipping) skipping = 0;
@@ -127,11 +127,11 @@ void control(token_row* tknrw) noexcept {
                 break;
             }
             if ((np = lookup(tknptr, 0))) {
-                if (np->flag & IS_UNCHANGEABLE) {
+                if (np->flag & UNCHANGEABLE) {
                     error(ERROR, "#defined token %t can't be undefined", tknptr);
                     return;
                 }
-                np->flag &= ~IS_DEFINED_VALUE;
+                np->flag &= ~DEFINED_VALUE;
             }
             break;
 

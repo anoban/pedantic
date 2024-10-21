@@ -7,48 +7,48 @@ int          verbose;
 int          Mflag;
 int          Cplusplus;
 int          nolineinfo;
-Nlist*       kwdefined;
+nlist*       kwdefined;
 char         wd[128];
 
 static constexpr size_t NLIST_SIZE { 128 };
-Nlist*                  nlist[NLIST_SIZE];
+nlist*                  nlist[NLIST_SIZE];
 
 struct keyword final {
-        const char*   keyword;
-        keyword_type  val;
-        keyword_props flag;
+        const char* keyword;
+        KWTYPE      val;
+        KWPROPS     flag;
 };
 
 static constexpr keyword keyword_table[] = {
-    {       "if",      keyword_type::KIF,              keyword_props::IS_KEYWORD },
-    {    "ifdef",   keyword_type::KIFDEF,              keyword_props::IS_KEYWORD },
-    {   "ifndef",  keyword_type::KIFNDEF,              keyword_props::IS_KEYWORD },
-    {     "elif",    keyword_type::KELIF,              keyword_props::IS_KEYWORD },
-    {     "else",    keyword_type::KELSE,              keyword_props::IS_KEYWORD },
-    {    "endif",   keyword_type::KENDIF,              keyword_props::IS_KEYWORD },
-    {  "include", keyword_type::KINCLUDE,              keyword_props::IS_KEYWORD },
-    {   "define",  keyword_type::KDEFINE,              keyword_props::IS_KEYWORD },
-    {    "undef",   keyword_type::KUNDEF,              keyword_props::IS_KEYWORD },
-    {     "line",    keyword_type::KLINE,              keyword_props::IS_KEYWORD },
-    {    "error",   keyword_type::KERROR,              keyword_props::IS_KEYWORD },
-    {  "warning", keyword_type::KWARNING,              keyword_props::IS_KEYWORD }, // extension to ANSI
-    {   "pragma",  keyword_type::KPRAGMA,              keyword_props::IS_KEYWORD },
-    {     "eval",    keyword_type::KEVAL,              keyword_props::IS_KEYWORD },
-    {  "defined", keyword_type::KDEFINED, keyword_props::IS_DEFINED_UNCHANGEABLE },
-    { "__LINE__",  keyword_type::KLINENO, keyword_props::IS_BUILTIN_UNCHANGEABLE },
-    { "__FILE__",    keyword_type::KFILE, keyword_props::IS_BUILTIN_UNCHANGEABLE },
-    { "__DATE__",    keyword_type::KDATE, keyword_props::IS_BUILTIN_UNCHANGEABLE },
-    { "__TIME__",    keyword_type::KTIME, keyword_props::IS_BUILTIN_UNCHANGEABLE },
-    { "__STDC__",    keyword_type::KSTDC,         keyword_props::IS_UNCHANGEABLE },
+    {       "if",      KWTYPE::KIF,              KWPROPS::KEYWORD },
+    {    "ifdef",   KWTYPE::KIFDEF,              KWPROPS::KEYWORD },
+    {   "ifndef",  KWTYPE::KIFNDEF,              KWPROPS::KEYWORD },
+    {     "elif",    KWTYPE::KELIF,              KWPROPS::KEYWORD },
+    {     "else",    KWTYPE::KELSE,              KWPROPS::KEYWORD },
+    {    "endif",   KWTYPE::KENDIF,              KWPROPS::KEYWORD },
+    {  "include", KWTYPE::KINCLUDE,              KWPROPS::KEYWORD },
+    {   "define",  KWTYPE::KDEFINE,              KWPROPS::KEYWORD },
+    {    "undef",   KWTYPE::KUNDEF,              KWPROPS::KEYWORD },
+    {     "line",    KWTYPE::KLINE,              KWPROPS::KEYWORD },
+    {    "error",   KWTYPE::KERROR,              KWPROPS::KEYWORD },
+    {  "warning", KWTYPE::KWARNING,              KWPROPS::KEYWORD }, // extension to ANSI
+    {   "pragma",  KWTYPE::KPRAGMA,              KWPROPS::KEYWORD },
+    {     "eval",    KWTYPE::KEVAL,              KWPROPS::KEYWORD },
+    {  "defined", KWTYPE::KDEFINED, KWPROPS::DEFINED_UNCHANGEABLE },
+    { "__LINE__",  KWTYPE::KLINENO, KWPROPS::BUILTIN_UNCHANGEABLE },
+    { "__FILE__",    KWTYPE::KFILE, KWPROPS::BUILTIN_UNCHANGEABLE },
+    { "__DATE__",    KWTYPE::KDATE, KWPROPS::BUILTIN_UNCHANGEABLE },
+    { "__TIME__",    KWTYPE::KTIME, KWPROPS::BUILTIN_UNCHANGEABLE },
+    { "__STDC__",    KWTYPE::KSTDC,         KWPROPS::UNCHANGEABLE },
     nullptr
 };
 
-unsigned long namebit[077 + 1];
-Nlist*        np;
+unsigned long namebit[0x40];
+nlist*        np;
 
 void setup(int argc, char** argv) noexcept {
     const keyword* kp;
-    Nlist*         np;
+    nlist*         np;
     token          t;
     int            fd, i;
     char *         fp, *dp;
@@ -87,22 +87,22 @@ void setup(int argc, char** argv) noexcept {
         includelist[1].file   = nbuf;
         includelist[1].always = 1;
     } else {
-        includelist[1].file = NULL;
+        includelist[1].file = nullptr;
         error(WARNING, "Unknown $objtype");
     }
     if (getwd(wd, sizeof(wd)) == 0) wd[0] = '\0';
     includelist[0].file   = "/sys/include";
     includelist[0].always = 1;
     firstinclude          = MAX_INCLUDE_DIRS - 2;
-    if ((includeenv = getenv("include")) != NULL) {
+    if ((includeenv = getenv("include")) != nullptr) {
         char* cp;
         includeenv = strdup(includeenv);
         for (; firstinclude > 0; firstinclude--) {
             cp = strtok(includeenv, " ");
-            if (cp == NULL) break;
+            if (cp == nullptr) break;
             includelist[firstinclude].file   = cp;
             includelist[firstinclude].always = 1;
-            includeenv                       = NULL;
+            includeenv                       = nullptr;
         }
     }
     setsource("", -1, 0);
@@ -113,7 +113,7 @@ void setup(int argc, char** argv) noexcept {
             break;
         case 'I' :
             for (i = firstinclude; i >= 0; i--) {
-                if (includelist[i].file == NULL) {
+                if (includelist[i].file == nullptr) {
                     includelist[i].always = 1;
                     includelist[i].file   = ARGF();
                     break;
@@ -146,7 +146,7 @@ void setup(int argc, char** argv) noexcept {
     fd = 0;
     if (argc > 2) error(FATAL, "Too many file arguments; see cpp(1)");
     if (argc > 0) {
-        if ((fp = strrchr(argv[0], '/')) != NULL) {
+        if ((fp = strrchr(argv[0], '/')) != nullptr) {
             int len = fp - argv[0];
             dp      = (char*) newstring((unsigned char*) argv[0], len + 1, 0);
             dp[len] = '\0';
@@ -163,16 +163,16 @@ void setup(int argc, char** argv) noexcept {
     includelist[MAX_INCLUDE_DIRS - 1].always = 0;
     includelist[MAX_INCLUDE_DIRS - 1].file   = dp;
     if (nodot) includelist[MAX_INCLUDE_DIRS - 1].deleted = 1;
-    setsource(fp, fd, NULL);
+    setsource(fp, fd, nullptr);
     if (debuginclude) {
         for (i = 0; i < MAX_INCLUDE_DIRS; i++)
             if (includelist[i].file && includelist[i].deleted == 0) error(WARNING, "Include: %s", includelist[i].file);
     }
 }
 
-Nlist* lookup(token* tp, int install) noexcept {
+nlist* lookup(token* tp, int install) noexcept {
     unsigned int   h;
-    Nlist*         np;
+    nlist*         np;
     unsigned char *cp, *cpe;
 
     h = 0;
@@ -184,10 +184,10 @@ Nlist* lookup(token* tp, int install) noexcept {
         np = np->next;
     }
     if (install) {
-        np       = _new_obj<Nlist>();
+        np       = _new_obj<nlist>();
         np->val  = 0;
-        np->vp   = NULL;
-        np->ap   = NULL;
+        np->vp   = nullptr;
+        np->ap   = nullptr;
         np->flag = 0;
         np->len  = tp->len;
         np->name = newstring(tp->t, tp->len, 0);
@@ -196,5 +196,5 @@ Nlist* lookup(token* tp, int install) noexcept {
         quickset(tp->t[0], tp->len > 1 ? tp->t[1] : 0);
         return np;
     }
-    return NULL;
+    return nullptr;
 }

@@ -111,7 +111,7 @@ int comparetokens(token_row* tknrow_0, token_row* tknrow_1) noexcept {
  * Canonical whitespace is assured on each side.
  */
 void insertrow(token_row* dest, size_t ntokens, token_row* src) {
-    int nrtok  = rowlen(src);
+    int nrtok  = tokenrow_len(src);
 
     dest->tp  += ntokens;
     adjustrow(dest, nrtok - ntokens);
@@ -182,7 +182,7 @@ void adjustrow(token_row* trp, int nt) {
  * the space for the contents.  Return the destination.
  */
 token_row* copytokenrow(token_row* dtr, token_row* str) {
-    int len = rowlen(str);
+    int len = tokenrow_len(str);
 
     maketokenrow(len, dtr);
     movetokenrow(dtr, str);
@@ -236,7 +236,7 @@ void peektokens(token_row* trp, char* str) {
         }
         if (tp->type == NAME) {
             fprintf(stderr, tp == trp->tp ? "{*" : "{");
-            prhideset(tp->hideset);
+            print_hideset(tp->hideset);
             fprintf(stderr, "} ");
         } else
             fprintf(stderr, tp == trp->tp ? "{%x*} " : "{%x} ", tp->type);

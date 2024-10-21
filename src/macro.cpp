@@ -7,7 +7,7 @@
  */
 void dodefine(token_row* trp) {
     token*     tp;
-    Nlist*     np;
+    nlist*     np;
     token_row *def, *args;
     int        dots;
 
@@ -18,13 +18,13 @@ void dodefine(token_row* trp) {
         return;
     }
     np = lookup(tp, 1);
-    if (np->flag & IS_UNCHANGEABLE) {
+    if (np->flag & UNCHANGEABLE) {
         error(ERROR, "#defined token %t can't be redefined", tp);
         return;
     }
     /* collect arguments */
     tp   += 1;
-    args  = NULL;
+    args  = nullptr;
     if (tp < trp->lp && tp->type == LP && tp->wslen == 0) {
         /* macro with args */
         int narg  = 0;
@@ -66,8 +66,8 @@ void dodefine(token_row* trp) {
     trp->tp = tp;
     if (((trp->lp) - 1)->type == NL) trp->lp -= 1;
     def = normtokenrow(trp);
-    if (np->flag & IS_DEFINED_VALUE) {
-        if (comparetokens(def, np->vp) || (np->ap == NULL) != (args == NULL) || np->ap && comparetokens(args, np->ap))
+    if (np->flag & DEFINED_VALUE) {
+        if (comparetokens(def, np->vp) || (np->ap == nullptr) != (args == nullptr) || np->ap && comparetokens(args, np->ap))
             error(ERROR, "Macro redefinition of %t", trp->bp + 2);
     }
     if (args) {
@@ -78,15 +78,15 @@ void dodefine(token_row* trp) {
     }
     np->ap    = args;
     np->vp    = def;
-    np->flag |= IS_DEFINED_VALUE;
-    if (dots) np->flag |= IS_VARIADIC_MACRO;
+    np->flag |= DEFINED_VALUE;
+    if (dots) np->flag |= VARIADIC_MACRO;
 }
 
 /*
  * Definition received via -D or -U
  */
 void doadefine(token_row* trp, int type) {
-    Nlist*               np;
+    nlist*               np;
     static unsigned char one[]       = "1";
     static token         onetoken[1] = {
         { NUMBER, 0, 0, 0, 1, one }
@@ -96,13 +96,13 @@ void doadefine(token_row* trp, int type) {
     trp->tp                = trp->bp;
     if (type == 'U') {
         if (trp->lp - trp->tp != 2 || trp->tp->type != NAME) goto syntax;
-        if ((np = lookup(trp->tp, 0)) == NULL) return;
-        np->flag &= ~IS_DEFINED_VALUE;
+        if ((np = lookup(trp->tp, 0)) == nullptr) return;
+        np->flag &= ~DEFINED_VALUE;
         return;
     }
     if (trp->tp >= trp->lp || trp->tp->type != NAME) goto syntax;
     np        = lookup(trp->tp, 1);
-    np->flag |= IS_DEFINED_VALUE;
+    np->flag |= DEFINED_VALUE;
     trp->tp  += 1;
     if (trp->tp >= trp->lp || trp->tp->type == END) {
         np->vp = &onetr;
@@ -119,16 +119,16 @@ syntax:
 
 /*
  * Do macro expansion in a row of tokens.
- * Flag is NULL if more input can be gathered.
+ * Flag is nullptr if more input can be gathered.
  */
 void expandrow(token_row* trp, char* flag, int inmacro) {
     token* tp;
-    Nlist* np;
+    nlist* np;
 
     if (flag) setsource(flag, -1, "");
     for (tp = trp->tp; tp < trp->lp;) {
-        if (tp->type != NAME || quicklook(tp->t[0], tp->len > 1 ? tp->t[1] : 0) == 0 || (np = lookup(tp, 0)) == NULL ||
-            (np->flag & (IS_DEFINED_VALUE | IS_BUILTIN)) == 0 || tp->hideset && checkhideset(tp->hideset, np)) {
+        if (tp->type != NAME || quicklook(tp->t[0], tp->len > 1 ? tp->t[1] : 0) == 0 || (np = lookup(tp, 0)) == nullptr ||
+            (np->flag & (DEFINED_VALUE | BUILTIN)) == 0 || tp->hideset && check_hideset(tp->hideset, np)) {
             tp++;
             continue;
         }
@@ -144,7 +144,7 @@ void expandrow(token_row* trp, char* flag, int inmacro) {
             tp++;
             continue;
         }
-        if (np->flag & IS_BUILTIN)
+        if (np->flag & BUILTIN)
             builtin(trp, np->val);
         else
             expand(trp, np, inmacro);
@@ -158,7 +158,7 @@ void expandrow(token_row* trp, char* flag, int inmacro) {
  * Return trp->tp at the first token next to be expanded
  * (ordinarily the beginning of the expansion)
  */
-void expand(token_row* trp, Nlist* np, int inmacro) {
+void expand(token_row* trp, nlist* np, int inmacro) {
     token_row  ntr;
     int        ntokc, narg, i;
     token*     tp;
@@ -166,18 +166,18 @@ void expand(token_row* trp, Nlist* np, int inmacro) {
     int        hs;
 
     copytokenrow(&ntr, np->vp); /* copy macro value */
-    if (np->ap == NULL)         /* parameterless */
+    if (np->ap == nullptr)      /* parameterless */
         ntokc = 1;
     else {
-        ntokc = gatherargs(trp, atr, (np->flag & IS_VARIADIC_MACRO) ? rowlen(np->ap) : 0, &narg);
+        ntokc = gatherargs(trp, atr, (np->flag & VARIADIC_MACRO) ? tokenrow_len(np->ap) : 0, &narg);
         if (narg < 0) { /* not actually a call (no '(') */
                         /* error(WARNING, "%d %r\n", narg, trp); */
             /* gatherargs has already pushed trp->tr to the next token */
             return;
         }
-        if (narg != rowlen(np->ap)) {
+        if (narg != tokenrow_len(np->ap)) {
             error(ERROR, "Disagreement in number of macro arguments");
-            trp->tp->hideset  = newhideset(trp->tp->hideset, np);
+            trp->tp->hideset  = new_hideset(trp->tp->hideset, np);
             trp->tp          += ntokc;
             return;
         }
@@ -188,7 +188,7 @@ void expand(token_row* trp, Nlist* np, int inmacro) {
         }
     }
     if (!inmacro) doconcat(&ntr); /* execute ## operators */
-    hs = newhideset(trp->tp->hideset, np);
+    hs = new_hideset(trp->tp->hideset, np);
     for (tp = ntr.bp; tp < ntr.lp; tp++) { /* distribute hidesets */
         if (tp->type == NAME) {
             if (tp->hideset == 0)
@@ -199,7 +199,7 @@ void expand(token_row* trp, Nlist* np, int inmacro) {
     }
     ntr.tp = ntr.bp;
     insertrow(trp, ntokc, &ntr);
-    trp->tp -= rowlen(&ntr);
+    trp->tp -= tokenrow_len(&ntr);
     free(ntr.bp);
     return;
 }
@@ -293,7 +293,7 @@ int gatherargs(token_row* trp, token_row** atr, int dots, int* narg) {
  * substitute the argument list into the replacement string
  *  This would be simple except for ## and #
  */
-void substargs(Nlist* np, token_row* rtr, token_row** atr) {
+void substargs(nlist* np, token_row* rtr, token_row** atr) {
     token_row tatr;
     token*    tp;
     int       ntok, argno;
@@ -370,11 +370,11 @@ void doconcat(token_row* trp) {
  * look it up in mac's arglist, and if found, return the
  * corresponding index in the argname array.  Return -1 if not found.
  */
-int lookuparg(Nlist* mac, token* tp) {
+int lookuparg(nlist* mac, token* tp) {
     token* ap;
 
-    if (tp->type != NAME || mac->ap == NULL) return -1;
-    if ((mac->flag & IS_VARIADIC_MACRO) && strcmp((char*) tp->t, "__VA_ARGS__") == 0) return rowlen(mac->ap) - 1;
+    if (tp->type != NAME || mac->ap == nullptr) return -1;
+    if ((mac->flag & VARIADIC_MACRO) && strcmp((char*) tp->t, "__VA_ARGS__") == 0) return tokenrow_len(mac->ap) - 1;
     for (ap = mac->ap->bp; ap < mac->ap->lp; ap++)
         if (ap->len == tp->len && strncmp((char*) ap->t, (char*) tp->t, ap->len) == 0) return ap - mac->ap->bp;
     return -1;
@@ -426,7 +426,7 @@ void builtin(token_row* trp, int biname) {
     /* need to find the real source */
     s = cursource;
     while (s && s->fd == -1) s = s->next;
-    if (s == NULL) s = cursource;
+    if (s == nullptr) s = cursource;
     /* most are strings */
     tp->type = STRING;
     if (tp->wslen) {

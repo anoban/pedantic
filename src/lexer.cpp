@@ -24,10 +24,11 @@
  *      nextstate: 6 bits; ?\ marker: 1 bit; tokentype: 9 bits.
  */
 
-#ifdef __cpp_lib_to_underlying // C++23
+#ifdef __cpp_lib_to_underlying // only available since C++23
 using std::to_underlying;
 #else
-template<class _Ty> static constexpr typename std::underlying_type<_Ty>::type to_underlying(const _Ty& _enum) noexcept {
+template<class _Ty>
+[[nodiscard]] static inline constexpr typename std::underlying_type<_Ty>::type to_underlying(const _Ty& _enum) noexcept {
     return static_cast<typename std::underlying_type<_Ty>::type>(_enum);
 }
 #endif
@@ -42,10 +43,10 @@ static constexpr size_t FSM_MAX_STATES { 32 };
 #define UTF3(c)       ((c) >= 0xE0 && (c) < 0xF0) /* 3-char UTF seq */
 
 // character classes
-enum class character_class : char { WHITESPACE = 0x01, ALPHABET, NUMBER, EOFILE, XX };
+enum CHARCLASS : char { WHITESPACE = 0x01, ALPHABET, NUMBER, EOFILE, MISC };
 
 // valid states for the finite state machine
-enum class fsm_state : unsigned {
+enum FSMSTATE : unsigned {
     START,
     NUM1,
     NUM2,
@@ -92,47 +93,47 @@ enum class fsm_state : unsigned {
 };
 
 struct fsm {
-        fsm_state state;     // if in this state
-        char      ch[4];     // and see one of these characters
-        fsm_state nextstate; // enter this state if positive
+        FSMSTATE state;     // if in this state
+        char     ch[4];     // and see one of these characters
+        FSMSTATE nextstate; // enter this state if positive
 };
 
 /*const*/
 fsm fsmachine[] = {
-    { fsm_state::START, { ::to_underlying(character_class::XX) }, ACT(UNCLASS, S_SELF) },
-    { fsm_state::START, { ' ', '\t', '\v', '\r' }, WS1 },
-    { fsm_state::START, { character_class::NUMBER }, NUM1 },
-    { fsm_state::START, { '.' }, NUM3 },
-    { fsm_state::START, { character_class::ALPHABET }, ID1 },
-    { fsm_state::START, { 'L' }, ST1 },
-    { fsm_state::START, { '"' }, ST2 },
-    { fsm_state::START, { '\'' }, CC1 },
-    { fsm_state::START, { '/' }, COM1 },
-    { fsm_state::START, { EOFC }, S_EOF },
-    { fsm_state::START, { '\n' }, S_NL },
-    { fsm_state::START, { '-' }, MINUS1 },
-    { fsm_state::START, { '+' }, PLUS1 },
-    { fsm_state::START, { '<' }, LT1 },
-    { fsm_state::START, { '>' }, GT1 },
-    { fsm_state::START, { '=' }, ASG1 },
-    { fsm_state::START, { '!' }, NOT1 },
-    { fsm_state::START, { '&' }, AND1 },
-    { fsm_state::START, { '|' }, OR1 },
-    { fsm_state::START, { '#' }, SHARP1 },
-    { fsm_state::START, { '%' }, PCT1 },
-    { fsm_state::START, { '[' }, ACT(SBRA, S_SELF) },
-    { fsm_state::START, { ']' }, ACT(SKET, S_SELF) },
-    { fsm_state::START, { '(' }, ACT(LP, S_SELF) },
-    { fsm_state::START, { ')' }, ACT(RP, S_SELF) },
-    { fsm_state::START, { '*' }, STAR1 },
-    { fsm_state::START, { ',' }, ACT(COMMA, S_SELF) },
-    { fsm_state::START, { '?' }, ACT(QUEST, S_SELF) },
-    { fsm_state::START, { ':' }, ACT(COLON, S_SELF) },
-    { fsm_state::START, { ';' }, ACT(SEMIC, S_SELF) },
-    { fsm_state::START, { '{' }, ACT(CBRA, S_SELF) },
-    { fsm_state::START, { '}' }, ACT(CKET, S_SELF) },
-    { fsm_state::START, { '~' }, ACT(TILDE, S_SELF) },
-    { fsm_state::START, { '^' }, CIRC1 },
+    { FSMSTATE::START, { ::to_underlying(CHARCLASS::MISC) }, ACT(TKNTYPE::UNCLASS, FSMSTATE::S_SELF) },
+    { FSMSTATE::START, { ' ', '\t', '\v', '\r' }, WS1 },
+    { FSMSTATE::START, { CHARCLASS::NUMBER }, NUM1 },
+    { FSMSTATE::START, { '.' }, NUM3 },
+    { FSMSTATE::START, { CHARCLASS::ALPHABET }, ID1 },
+    { FSMSTATE::START, { 'L' }, ST1 },
+    { FSMSTATE::START, { '"' }, ST2 },
+    { FSMSTATE::START, { '\'' }, CC1 },
+    { FSMSTATE::START, { '/' }, COM1 },
+    { FSMSTATE::START, { EOFC }, S_EOF },
+    { FSMSTATE::START, { '\n' }, S_NL },
+    { FSMSTATE::START, { '-' }, MINUS1 },
+    { FSMSTATE::START, { '+' }, PLUS1 },
+    { FSMSTATE::START, { '<' }, LT1 },
+    { FSMSTATE::START, { '>' }, GT1 },
+    { FSMSTATE::START, { '=' }, ASG1 },
+    { FSMSTATE::START, { '!' }, NOT1 },
+    { FSMSTATE::START, { '&' }, AND1 },
+    { FSMSTATE::START, { '|' }, OR1 },
+    { FSMSTATE::START, { '#' }, SHARP1 },
+    { FSMSTATE::START, { '%' }, PCT1 },
+    { FSMSTATE::START, { '[' }, ACT(SBRA, S_SELF) },
+    { FSMSTATE::START, { ']' }, ACT(SKET, S_SELF) },
+    { FSMSTATE::START, { '(' }, ACT(LP, S_SELF) },
+    { FSMSTATE::START, { ')' }, ACT(RP, S_SELF) },
+    { FSMSTATE::START, { '*' }, STAR1 },
+    { FSMSTATE::START, { ',' }, ACT(COMMA, S_SELF) },
+    { FSMSTATE::START, { '?' }, ACT(QUEST, S_SELF) },
+    { FSMSTATE::START, { ':' }, ACT(COLON, S_SELF) },
+    { FSMSTATE::START, { ';' }, ACT(SEMIC, S_SELF) },
+    { FSMSTATE::START, { '{' }, ACT(CBRA, S_SELF) },
+    { FSMSTATE::START, { '}' }, ACT(CKET, S_SELF) },
+    { FSMSTATE::START, { '~' }, ACT(TILDE, S_SELF) },
+    { FSMSTATE::START, { '^' }, CIRC1 },
 
     /* saw a digit */
     { NUM1, { C_XX }, ACT(NUMBER, S_SELFB) },
@@ -218,29 +219,15 @@ fsm fsmachine[] = {
     { WS1, { ' ', '\t', '\v', '\r' }, WS1 },
 
     /* saw -, check --, -=, -> */
-    MINUS1,
-    { C_XX },
-    ACT(MINUS, S_SELFB),
-    MINUS1,
-    { '-' },
-    ACT(MMINUS, S_SELF),
-    MINUS1,
-    { '=' },
-    ACT(ASMINUS, S_SELF),
-    MINUS1,
-    { '>' },
-    ACT(ARROW, S_SELF),
+    { MINUS1, { C_XX }, ACT(MINUS, S_SELFB) },
+    { MINUS1, { '-' }, ACT(MMINUS, S_SELF) },
+    { MINUS1, { '=' }, ACT(ASMINUS, S_SELF) },
+    { MINUS1, { '>' }, ACT(ARROW, S_SELF) },
 
     /* saw +, check ++, += */
-    PLUS1,
-    { C_XX },
-    ACT(PLUS, S_SELFB),
-    PLUS1,
-    { '+' },
-    ACT(PPLUS, S_SELF),
-    PLUS1,
-    { '=' },
-    ACT(ASPLUS, S_SELF),
+    { PLUS1, { C_XX }, ACT(PLUS, S_SELFB) },
+    { PLUS1, { '+' }, ACT(PPLUS, S_SELF) },
+    { PLUS1, { '=' }, ACT(ASPLUS, S_SELF) },
 
     /* saw <, check <<, <<=, <= */
     { LT1, { C_XX }, ACT(LT, S_SELFB) },
@@ -306,14 +293,14 @@ void expandlex(void) {
             if (nstate >= S_SELF) nstate = ~nstate;
 
             switch (fp->ch[i]) {
-                case character_class::XX : /* random characters */
+                case CHARCLASS::MISC : /* random characters */
                     for (j = 0; j < 256; j++) bigfsm[j][fp->state] = nstate;
                     continue;
-                case character_class::ALPHABET :
+                case CHARCLASS::ALPHABET :
                     for (j = 0; j <= 256; j++)
                         if ('a' <= j && j <= 'z' || 'A' <= j && j <= 'Z' || UTF2(j) || UTF3(j) || j == '_') bigfsm[j][fp->state] = nstate;
                     continue;
-                case character_class::NUMBER :
+                case CHARCLASS::NUMBER :
                     for (j = '0'; j <= '9'; j++) bigfsm[j][fp->state] = nstate;
                     continue;
                 default : bigfsm[fp->ch[i]][fp->state] = nstate;
@@ -507,7 +494,7 @@ reswitch:
 }
 
 /* have seen ?; handle the trigraph it starts (if any) else 0 */
-int trigraph(source* s) {
+int trigraph(source* s) noexcept {
     int c;
 
     while (s->inp + 2 >= s->inl && fillbuf(s) != EOF);
@@ -532,7 +519,7 @@ int trigraph(source* s) {
     return c;
 }
 
-int foldline(source* s) {
+int foldline(source* s) noexcept {
     int ncr = 0;
 
 recheck:
@@ -549,7 +536,7 @@ recheck:
     return 0;
 }
 
-int fillbuf(source* s) {
+int fillbuf(source* s) noexcept {
     int n;
 
     while ((char*) s->inl + s->ins / 8 > (char*) s->inb + s->ins) {
@@ -577,10 +564,10 @@ int fillbuf(source* s) {
 
 /*
  * Push down to new source of characters.
- * If fd>0 and str==NULL, then from a file `name';
+ * If fd>0 and str==nullptr, then from a file `name';
  * if fd==-1 and str, then from the string.
  */
-source* setsource(char* name, int fd, char* str) {
+source* setsource(char* name, int fd, char* str) noexcept {
     source* s = _new_obj<source>();
     int     len;
 
@@ -619,7 +606,7 @@ source* setsource(char* name, int fd, char* str) {
     return s;
 }
 
-void unsetsource(void) {
+void unsetsource() noexcept {
     source* s = cursource;
 
     if (s->fd >= 0) {

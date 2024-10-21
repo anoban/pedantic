@@ -1,6 +1,6 @@
 #include <prep.hpp>
 
-include_list includelist[MAX_INCLUDE_DIRS];
+include_list includelist[MAX_INCLUDE_DIRS] {};
 
 char* objname;
 
@@ -42,7 +42,7 @@ void doinclude(token_row* trp) {
     } else
         for (fd = -1, i = MAX_INCLUDE_DIRS - 1; i >= 0; i--) {
             ip = &includelist[i];
-            if (ip->file == NULL || ip->deleted || (angled && ip->always == 0)) continue;
+            if (ip->file == nullptr || ip->deleted || (angled && ip->always == 0)) continue;
             if (strlen(fname) + strlen(ip->file) + 2 > sizeof(iname)) continue;
             strcpy(iname, ip->file);
             strcat(iname, "/");
@@ -52,7 +52,7 @@ void doinclude(token_row* trp) {
     if (fd < 0) {
         strcpy(iname, cursource->filename);
         p = strrchr(iname, '/');
-        if (p != NULL) {
+        if (p != nullptr) {
             *p = '\0';
             strcat(iname, "/");
             strcat(iname, fname);
@@ -66,7 +66,7 @@ void doinclude(token_row* trp) {
     }
     if (fd >= 0) {
         if (++incdepth > 20) error(FATAL, "#include too deeply nested");
-        setsource((char*) newstring((unsigned char*) iname, strlen(iname), 0), fd, NULL);
+        setsource((char*) newstring((unsigned char*) iname, strlen(iname), 0), fd, nullptr);
         genline();
     } else {
         trp->tp = trp->bp + 2;
@@ -82,7 +82,7 @@ syntax:
  * Generate a line directive for cursource
  */
 void genline(void) {
-    static token     ta = { UNCLASS, NULL, 0, 0 };
+    static token     ta = { UNCLASS, nullptr, 0, 0 };
     static token_row tr = { &ta, &ta, &ta + 1, 1 };
     unsigned char*   p;
 
